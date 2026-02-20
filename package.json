@@ -1,0 +1,95 @@
+{
+  "name": "dmx-chat",
+  "version": "1.0.0",
+  "description": "Full-stack chat application like Discord",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build && cd ../server && npm run build",
+    "start": "cd server && npm start",
+    "electron": "electron .",
+    "electron:dev": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win",
+    "dist:zip": "npm run build && electron-builder --win --config.win.target=zip",
+    "dist:nsis": "npm run build && electron-builder --win --config.win.target=nsis"
+  },
+  "keywords": [
+    "chat",
+    "discord",
+    "messenger",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.1"
+  },
+  "build": {
+    "appId": "com.dmxgram.app",
+    "productName": "DMXGram",
+    "icon": "client/public/logo.png",
+    "asar": true,
+    "asarUnpack": [
+      "client/dist/**/*",
+      "client/public/**/*"
+    ],
+    "npmRebuild": false,
+    "publish": {
+      "provider": "github",
+      "owner": "prodorzech",
+      "repo": "dmxgram"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "server/dist/**/*",
+      "client/dist/**/*",
+      "client/public/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "client/public/logo.png",
+      "signingHashAlgorithms": null,
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerHeader": "build/installer-header.bmp",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "license": "build/license.txt",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DMXGram",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "electron-updater": "^6.8.3",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.3",
+    "uuid": "^9.0.1"
+  }
+}

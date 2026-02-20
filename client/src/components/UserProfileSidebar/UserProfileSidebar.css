@@ -1,0 +1,231 @@
+.user-profile-sidebar {
+  width: 340px;
+  min-width: 340px;
+  max-width: 340px;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid var(--border-color);
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-sidebar-header {
+  position: relative;
+  height: 120px;
+}
+
+.profile-sidebar-banner {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.profile-sidebar-avatar-container {
+  position: absolute;
+  bottom: -20px;
+  left: 20px;
+  width: 80px;
+  height: 80px;
+}
+
+.profile-sidebar-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 6px solid rgba(30, 30, 30, 0.95);
+  background: var(--bg-secondary);
+}
+
+.profile-sidebar-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent-primary);
+}
+
+.profile-sidebar-status-indicator {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 4px solid rgba(30, 30, 30, 0.95);
+}
+
+.profile-sidebar-content {
+  padding: 30px 20px 20px;
+  flex: 1;
+}
+
+.profile-sidebar-username {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.profile-sidebar-status-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.profile-sidebar-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+}
+
+.profile-sidebar-section {
+  margin-bottom: 16px;
+}
+
+.profile-sidebar-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-sidebar-bio {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.profile-sidebar-no-bio {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0;
+}
+
+.profile-sidebar-loading {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.profile-sidebar-no-mutual {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0;
+}
+
+.mutual-friends-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.mutual-friend-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.mutual-friend-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mutual-friend-avatar-container {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.mutual-friend-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-secondary);
+}
+
+.mutual-friend-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent-primary);
+}
+
+.mutual-friend-status-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 3px solid rgba(30, 30, 30, 0.95);
+}
+
+.mutual-friend-username {
+  font-size: 11px;
+  color: var(--text-primary);
+  text-align: center;
+  word-break: break-word;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light theme */
+body[data-theme='light'] .user-profile-sidebar {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+body[data-theme='light'] .profile-sidebar-avatar {
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+body[data-theme='light'] .profile-sidebar-status-indicator {
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+body[data-theme='light'] .mutual-friend-status-indicator {
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+body[data-theme='light'] .mutual-friend-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Scrollbar */
+.user-profile-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-profile-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.user-profile-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.user-profile-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

@@ -1,0 +1,46 @@
+.dashboard {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.dashboard-overlay {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(3px);
+}
+
+.dashboard-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(45, 45, 45, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.close-admin-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 24px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  animation: slideUp 0.3s ease-out;
+}
+
+.close-admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  background: var(--accent-hover);
+}

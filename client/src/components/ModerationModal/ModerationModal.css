@@ -1,0 +1,375 @@
+.moderation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s;
+}
+
+.moderation-modal {
+  background: var(--background-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+.moderation-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-primary);
+  position: sticky;
+  top: 0;
+  background: var(--background-primary);
+  z-index: 1;
+}
+
+.moderation-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--background-hover);
+  color: var(--text-primary);
+}
+
+.moderation-modal-content {
+  padding: 20px;
+}
+
+.moderation-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.moderation-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--background-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--accent-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.moderation-type-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: var(--background-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  background: var(--background-hover);
+  color: var(--text-primary);
+}
+
+.type-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.restriction-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.restriction-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--background-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.restriction-toggle:hover {
+  background: var(--background-hover);
+}
+
+.restriction-toggle.ban {
+  border: 2px solid #ef4444;
+}
+
+.restriction-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.restriction-toggle span {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.add-moderation-btn,
+.update-restrictions-btn,
+.clear-restrictions-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-moderation-btn {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.add-moderation-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.add-moderation-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.update-restrictions-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.update-restrictions-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.clear-restrictions-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.clear-restrictions-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.active-restrictions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.active-restriction-item {
+  padding: 12px;
+  background: var(--background-tertiary);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: 4px;
+}
+
+.restriction-type {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  margin-bottom: 4px;
+}
+
+.restriction-reason {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.restriction-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.reset-password-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #8b5cf6;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-password-btn:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.reset-password-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-reset-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.password-display {
+  padding: 16px;
+  background: var(--background-tertiary);
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+}
+
+.password-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.password-value {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-primary);
+  text-align: center;
+  padding: 8px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  letter-spacing: 2px;
+}
+
+.copy-password-btn {
+  padding: 10px;
+  background: #10b981;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-password-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.password-note {
+  margin: 0;
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

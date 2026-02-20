@@ -1,0 +1,195 @@
+.user-status-panel {
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 12px;
+  animation: fadeIn 0.3s;
+}
+
+.user-status-panel h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border-radius: 12px;
+  text-align: center;
+  gap: 12px;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.status-card.good {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid #10b981;
+  color: #10b981;
+}
+
+.status-card.good h4 {
+  margin: 0;
+  color: #10b981;
+  font-size: 20px;
+}
+
+.status-card.good p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.status-card.banned {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid #ef4444;
+  color: #ef4444;
+}
+
+.status-card.banned h4 {
+  margin: 0;
+  color: #ef4444;
+  font-size: 20px;
+}
+
+.status-card.banned p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.status-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--background-tertiary);
+  border-radius: 8px;
+}
+
+.status-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.restriction-item,
+.warning-item {
+  padding: 12px;
+  background: var(--background-primary);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.restriction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.restriction-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.restriction-type.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.restriction-type.restriction {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.restriction-type.ban {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.restriction-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.restriction-reason,
+.restriction-date,
+.warning-reason,
+.warning-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 4px 0;
+}
+
+.restriction-reason strong,
+.restriction-date strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.warning-reason {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.warning-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.restrictions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.restrictions-list li {
+  padding: 10px 12px;
+  background: var(--background-primary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.restrictions-list li.blocked {
+  border-left: 4px solid #ef4444;
+  color: #ef4444;
+}
+
+.restrictions-list li.blocked::before {
+  content: '🚫';
+  font-size: 16px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

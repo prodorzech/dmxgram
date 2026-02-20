@@ -1,0 +1,445 @@
+/* ============================================================
+   RESPONSIVE STYLES – DMXGram
+   Phone:   ≤ 640px
+   Tablet:  641px – 1024px
+   Desktop: default (1025px – 1999px)
+   TV:      ≥ 2000px
+   ============================================================ */
+
+/* ================================================================
+   PHONE  ≤ 640px
+   ================================================================ */
+@media (max-width: 640px) {
+
+  /* --- AUTH --- */
+  .auth-box {
+    padding: 1.75rem 1.25rem;
+    border-radius: 16px;
+    margin: 0 12px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .auth-title {
+    font-size: 1.8rem !important;
+  }
+
+  .auth-subtitle {
+    font-size: 0.85rem !important;
+  }
+
+  .auth-logo-icon {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  /* --- DASHBOARD LAYOUT --- */
+  .dashboard-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Sidebar: hidden by default, slide in from left */
+  .dashboard-sidebar {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* When chat is open, slide sidebar off-screen to the left */
+  .dashboard-overlay[data-chat-open="true"] .dashboard-sidebar {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  /* DMChat: slide in from the right */
+  .dm-chat-container,
+  .dm-chat.empty {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+  }
+
+  .dashboard-overlay[data-chat-open="true"] .dm-chat-container,
+  .dashboard-overlay[data-chat-open="true"] .dm-chat.empty {
+    transform: translateX(0);
+  }
+
+  /* FriendsList: full width */
+  .friends-list {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-right: none !important;
+  }
+
+  /* Mobile back button: visible */
+  .mobile-back-btn {
+    display: flex !important;
+  }
+
+  /* --- USER PANEL --- */
+  .user-panel {
+    padding: 10px 12px;
+  }
+
+  .user-info {
+    max-width: 140px;
+  }
+
+  /* --- DM CHAT --- */
+  .dm-chat-header {
+    padding: 10px 14px;
+  }
+
+  .dm-messages {
+    padding: 12px 10px;
+  }
+
+  .message-content {
+    max-width: 88% !important;
+  }
+
+  .dm-input-container {
+    padding: 10px 12px;
+  }
+
+  .dm-input-form input {
+    font-size: 16px !important; /* Prevents iOS zoom */
+  }
+
+  /* --- MODALS: full-screen on mobile --- */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .user-settings-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 95vh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .moderation-modal-overlay-new,
+  .moderation-modal-overlay {
+    align-items: flex-end !important;
+  }
+
+  .moderation-modal-new {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 95vh !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .settings-modal-overlay {
+    align-items: flex-end !important;
+  }
+
+  .settings-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  /* UserProfileModal */
+  .user-profile-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ChangePasswordModal */
+  .change-password-modal {
+    width: 95% !important;
+    padding: 1.5rem !important;
+  }
+
+  /* --- ADMIN PANEL --- */
+  .admin-panel {
+    padding: 14px !important;
+  }
+
+  .admin-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .admin-title h1 {
+    font-size: 20px !important;
+  }
+
+  .close-admin-btn {
+    bottom: 14px;
+    right: 14px;
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+
+  /* Admin user cards / table rows */
+  .user-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* UserProfileSidebar: hide on mobile (shown in modal instead) */
+  .user-profile-sidebar {
+    display: none !important;
+  }
+
+  /* ModerationModal tabs: smaller text */
+  .tab-btn {
+    font-size: 11px !important;
+    padding: 8px 6px !important;
+    gap: 4px !important;
+  }
+
+  .tab-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Emoji picker */
+  .emoji-picker {
+    width: calc(100vw - 24px) !important;
+    right: 0 !important;
+    left: auto !important;
+    bottom: 60px !important;
+  }
+}
+
+/* ================================================================
+   TABLET  641px – 1024px
+   ================================================================ */
+@media (min-width: 641px) and (max-width: 1024px) {
+
+  /* --- AUTH --- */
+  .auth-box {
+    padding: 2.25rem;
+    max-width: 420px;
+  }
+
+  /* --- FRIENDS LIST: narrower --- */
+  .friends-list {
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+  }
+
+  /* --- DM CHAT --- */
+  .dm-messages {
+    padding: 16px;
+  }
+
+  .message-content {
+    max-width: 78% !important;
+  }
+
+  /* --- MODALS --- */
+  .user-settings-modal {
+    width: 96% !important;
+    max-width: 560px !important;
+  }
+
+  .moderation-modal-new {
+    width: 96% !important;
+    max-width: 760px !important;
+  }
+
+  /* --- ADMIN PANEL --- */
+  .admin-panel {
+    padding: 20px !important;
+  }
+
+  .admin-title h1 {
+    font-size: 22px !important;
+  }
+
+  /* --- USER PANEL --- */
+  .user-info {
+    max-width: 120px;
+  }
+
+  /* Moderation modal tabs: compact */
+  .tab-btn span {
+    display: none;
+  }
+
+  /* UserProfileSidebar: narrower */
+  .user-profile-sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+  }
+}
+
+/* ================================================================
+   TV / LARGE SCREENS  ≥ 2000px
+   ================================================================ */
+@media (min-width: 2000px) {
+
+  /* Larger base font */
+  body {
+    font-size: 17px;
+  }
+
+  /* --- FRIENDS LIST: wider --- */
+  .friends-list {
+    width: 380px !important;
+    min-width: 380px !important;
+    max-width: 380px !important;
+  }
+
+  /* Friend items */
+  .friend-item {
+    padding: 16px !important;
+  }
+
+  .friend-avatar,
+  .friend-avatar img {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  /* --- USER PANEL --- */
+  .user-panel {
+    padding: 18px 22px !important;
+  }
+
+  .user-avatar {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .user-name {
+    font-size: 16px !important;
+  }
+
+  /* --- DM CHAT --- */
+  .dm-chat-header {
+    padding: 18px 32px !important;
+  }
+
+  .dm-messages {
+    padding: 28px 32px !important;
+    gap: 14px !important;
+  }
+
+  .message {
+    gap: 18px !important;
+  }
+
+  .message-avatar,
+  .message-avatar img {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .message-avatar-spacer {
+    width: 52px !important;
+  }
+
+  .message-text {
+    font-size: 16px !important;
+    padding: 14px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  .message-username {
+    font-size: 16px !important;
+  }
+
+  .message-time {
+    font-size: 13px !important;
+  }
+
+  .message-content {
+    max-width: 60% !important;
+  }
+
+  .dm-input-container {
+    padding: 20px 32px !important;
+  }
+
+  /* --- AUTH --- */
+  .auth-box {
+    max-width: 580px;
+    padding: 4rem;
+  }
+
+  .auth-title {
+    font-size: 3.2rem !important;
+  }
+
+  .auth-logo-icon {
+    width: 110px !important;
+    height: 110px !important;
+  }
+
+  /* --- ADMIN PANEL --- */
+  .admin-panel {
+    padding: 40px !important;
+  }
+
+  .admin-title h1 {
+    font-size: 36px !important;
+  }
+
+  /* Moderation modal: bigger */
+  .moderation-modal-new {
+    max-width: 1200px !important;
+    max-height: 85vh !important;
+  }
+
+  /* Tabs */
+  .tab-btn {
+    font-size: 16px !important;
+    padding: 14px 20px !important;
+  }
+
+  /* Settings modal */
+  .user-settings-modal {
+    max-width: 800px !important;
+  }
+
+  /* Friends list items: larger text */
+  .friend-name {
+    font-size: 16px !important;
+  }
+
+  .friend-status {
+    font-size: 13px !important;
+  }
+
+  /* Headers */
+  .friends-header h2 {
+    font-size: 22px !important;
+  }
+
+  .dm-chat-header h3 {
+    font-size: 20px !important;
+  }
+
+  /* UserProfileSidebar: wider */
+  .user-profile-sidebar {
+    width: 360px !important;
+    min-width: 360px !important;
+  }
+
+  /* Scrollbar bigger */
+  ::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
