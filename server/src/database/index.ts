@@ -3,16 +3,21 @@ import { User, Server, Channel, Message, DirectMessage, FriendRequest, Friendshi
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Lazy Supabase client — created on first use so that env vars set by
+// electron/main.js before require() are already in process.env
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _supabase: any = null;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): any {
+  if (!_supabase) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
+    _supabase = createClient(url, key, { auth: { persistSession: false } });
+  }
+  return _supabase;
 }
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
 
 // ─── Row mappers (snake_case DB → camelCase TS) ──────────────────────────────
 
@@ -102,12 +107,12 @@ function rowToFriendship(row: any): Friendship {
 
 async function fetchFullServer(serverRow: any): Promise<Server> {
   const [{ data: channelRows }, { data: memberRows }] = await Promise.all([
-    supabase
+    getSupabase()
       .from('channels')
       .select('*')
       .eq('server_id', serverRow.id)
       .order('created_at', { ascending: true }),
-    supabase
+    getSupabase()
       .from('server_members')
       .select('user_id')
       .eq('server_id', serverRow.id),
@@ -137,7 +142,7 @@ export class Database {
   // ── Users ──────────────────────────────────────────────────────────────────
 
   async createUser(user: User): Promise<User> {
-    const { error } = await supabase.from('users').insert({
+    const { error } = await getSupabase().from('users').insert({
       id: user.id,
       username: user.username,
       email: user.email,
@@ -162,7 +167,7 @@ export class Database {
   }
 
   async getUserById(id: string): Promise<User | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .eq('id', id)
@@ -175,7 +180,7 @@ export class Database {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .eq('email', email)
@@ -188,7 +193,7 @@ export class Database {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .ilike('username', username)
@@ -205,12 +210,12 @@ export class Database {
   }
 
   async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('*')
       .order('created_at', { ascending: true });
     if (error) throw error;
-    return (data || []).map(row => {
+    return (data || []).map((row: any) => {
       const user = rowToUser(row);
       if (this.statusCache.has(user.id)) user.status = this.statusCache.get(user.id)!;
       return user;
@@ -236,7 +241,7 @@ export class Database {
     if (updates.warnings !== undefined) dbUpdates.warnings = updates.warnings;
     if (updates.activeRestrictions !== undefined) dbUpdates.active_restrictions = updates.activeRestrictions;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .update(dbUpdates)
       .eq('id', userId)
@@ -250,7 +255,7 @@ export class Database {
   // ── Servers ────────────────────────────────────────────────────────────────
 
   async createServer(server: Server): Promise<Server> {
-    const { error: sErr } = await supabase.from('servers').insert({
+    const { error: sErr } = await getSupabase().from('servers').insert({
       id: server.id,
       name: server.name,
       description: server.description ?? null,
@@ -262,7 +267,7 @@ export class Database {
     if (sErr) throw sErr;
 
     if (server.channels.length > 0) {
-      const { error: chErr } = await supabase.from('channels').insert(
+      const { error: chErr } = await getSupabase().from('channels').insert(
         server.channels.map(ch => ({
           id: ch.id,
           server_id: server.id,
@@ -276,7 +281,7 @@ export class Database {
     }
 
     if (server.members.length > 0) {
-      const { error: mErr } = await supabase.from('server_members').insert(
+      const { error: mErr } = await getSupabase().from('server_members').insert(
         server.members.map(uid => ({ server_id: server.id, user_id: uid }))
       );
       if (mErr) throw mErr;
@@ -286,7 +291,7 @@ export class Database {
   }
 
   async getServerById(id: string): Promise<Server | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('servers')
       .select('*')
       .eq('id', id)
@@ -297,7 +302,7 @@ export class Database {
   }
 
   async getServerByInviteCode(inviteCode: string): Promise<Server | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('servers')
       .select('*')
       .eq('invite_code', inviteCode)
@@ -318,7 +323,7 @@ export class Database {
 
   async regenerateInviteCode(serverId: string): Promise<string | null> {
     const code = await this.generateInviteCode();
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('servers')
       .update({ invite_code: code })
       .eq('id', serverId);
@@ -327,7 +332,7 @@ export class Database {
   }
 
   async getUserServers(userId: string): Promise<Server[]> {
-    const { data: memberRows, error: mErr } = await supabase
+    const { data: memberRows, error: mErr } = await getSupabase()
       .from('server_members')
       .select('server_id')
       .eq('user_id', userId);
@@ -335,7 +340,7 @@ export class Database {
     if (!memberRows || memberRows.length === 0) return [];
 
     const serverIds = memberRows.map((r: any) => r.server_id);
-    const { data: serverRows, error: sErr } = await supabase
+    const { data: serverRows, error: sErr } = await getSupabase()
       .from('servers')
       .select('*')
       .in('id', serverIds);
@@ -345,7 +350,7 @@ export class Database {
   }
 
   async addServerMember(serverId: string, userId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('server_members')
       .insert({ server_id: serverId, user_id: userId });
     if (error) {
@@ -356,7 +361,7 @@ export class Database {
   }
 
   async removeServerMember(serverId: string, userId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('server_members')
       .delete()
       .eq('server_id', serverId)
@@ -366,7 +371,7 @@ export class Database {
   }
 
   async deleteServer(serverId: string): Promise<boolean> {
-    const { error } = await supabase.from('servers').delete().eq('id', serverId);
+    const { error } = await getSupabase().from('servers').delete().eq('id', serverId);
     if (error) throw error;
     return true;
   }
@@ -374,7 +379,7 @@ export class Database {
   // ── Channels ───────────────────────────────────────────────────────────────
 
   async addChannel(serverId: string, channel: Channel): Promise<boolean> {
-    const { error } = await supabase.from('channels').insert({
+    const { error } = await getSupabase().from('channels').insert({
       id: channel.id,
       server_id: serverId,
       name: channel.name,
@@ -387,7 +392,7 @@ export class Database {
   }
 
   async deleteChannel(serverId: string, channelId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('channels')
       .delete()
       .eq('id', channelId)
@@ -399,7 +404,7 @@ export class Database {
   // ── Messages ───────────────────────────────────────────────────────────────
 
   async addMessage(message: Message): Promise<Message> {
-    const { error } = await supabase.from('messages').insert({
+    const { error } = await getSupabase().from('messages').insert({
       id: message.id,
       channel_id: message.channelId,
       user_id: message.userId,
@@ -414,7 +419,7 @@ export class Database {
   }
 
   async getChannelMessages(channelId: string, limit: number = 50): Promise<Message[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('messages')
       .select('*')
       .eq('channel_id', channelId)
@@ -425,7 +430,7 @@ export class Database {
   }
 
   async deleteMessage(channelId: string, messageId: string): Promise<boolean> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('messages')
       .delete()
       .eq('id', messageId)
@@ -435,7 +440,7 @@ export class Database {
   }
 
   async editMessage(channelId: string, messageId: string, newContent: string): Promise<Message | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('messages')
       .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
       .eq('id', messageId)
@@ -450,7 +455,7 @@ export class Database {
   // ── Direct Messages ────────────────────────────────────────────────────────
 
   async addDirectMessage(dm: DirectMessage): Promise<DirectMessage> {
-    const { error } = await supabase.from('direct_messages').insert({
+    const { error } = await getSupabase().from('direct_messages').insert({
       id: dm.id,
       sender_id: dm.senderId,
       receiver_id: dm.receiverId,
@@ -468,7 +473,7 @@ export class Database {
   }
 
   async getDirectMessages(userId1: string, userId2: string, limit: number = 50): Promise<DirectMessage[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('direct_messages')
       .select('*')
       .or(
@@ -481,7 +486,7 @@ export class Database {
   }
 
   async getDirectMessageById(userId1: string, userId2: string, messageId: string): Promise<DirectMessage | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('direct_messages')
       .select('*')
       .eq('id', messageId)
@@ -492,7 +497,7 @@ export class Database {
   }
 
   async deleteDirectMessage(userId1: string, userId2: string, messageId: string): Promise<boolean> {
-    const { error } = await supabase.from('direct_messages').delete().eq('id', messageId);
+    const { error } = await getSupabase().from('direct_messages').delete().eq('id', messageId);
     if (error) throw error;
     return true;
   }
@@ -503,7 +508,7 @@ export class Database {
     messageId: string,
     newContent: string
   ): Promise<DirectMessage | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('direct_messages')
       .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
       .eq('id', messageId)
@@ -517,7 +522,7 @@ export class Database {
   // ── Friend Requests ────────────────────────────────────────────────────────
 
   async createFriendRequest(request: FriendRequest): Promise<FriendRequest> {
-    const { error } = await supabase.from('friend_requests').insert({
+    const { error } = await getSupabase().from('friend_requests').insert({
       id: request.id,
       sender_id: request.senderId,
       sender_username: request.senderUsername,
@@ -530,7 +535,7 @@ export class Database {
   }
 
   async getFriendRequest(requestId: string): Promise<FriendRequest | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friend_requests')
       .select('*')
       .eq('id', requestId)
@@ -541,7 +546,7 @@ export class Database {
   }
 
   async getPendingFriendRequests(userId: string): Promise<FriendRequest[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friend_requests')
       .select('*')
       .eq('receiver_id', userId)
@@ -551,7 +556,7 @@ export class Database {
   }
 
   async getSentFriendRequests(userId: string): Promise<FriendRequest[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friend_requests')
       .select('*')
       .eq('sender_id', userId)
@@ -564,7 +569,7 @@ export class Database {
     requestId: string,
     status: 'accepted' | 'rejected'
   ): Promise<FriendRequest | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friend_requests')
       .update({ status })
       .eq('id', requestId)
@@ -576,7 +581,7 @@ export class Database {
   }
 
   async findExistingFriendRequest(senderId: string, receiverId: string): Promise<FriendRequest | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friend_requests')
       .select('*')
       .or(
@@ -591,7 +596,7 @@ export class Database {
 
   async createFriendship(friendship: Friendship): Promise<Friendship> {
     const [uid1, uid2] = [friendship.userId1, friendship.userId2].sort();
-    const { error } = await supabase.from('friendships').insert({
+    const { error } = await getSupabase().from('friendships').insert({
       user_id1: uid1,
       user_id2: uid2,
       created_at: friendship.createdAt.toISOString(),
@@ -602,7 +607,7 @@ export class Database {
 
   async areFriends(userId1: string, userId2: string): Promise<boolean> {
     const [uid1, uid2] = [userId1, userId2].sort();
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friendships')
       .select('user_id1')
       .eq('user_id1', uid1)
@@ -613,7 +618,7 @@ export class Database {
   }
 
   async getFriends(userId: string): Promise<User[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('friendships')
       .select('user_id1, user_id2')
       .or(`user_id1.eq.${userId},user_id2.eq.${userId}`);
@@ -621,13 +626,13 @@ export class Database {
     if (!data || data.length === 0) return [];
 
     const friendIds = data.map((r: any) => (r.user_id1 === userId ? r.user_id2 : r.user_id1));
-    const { data: users, error: uErr } = await supabase
+    const { data: users, error: uErr } = await getSupabase()
       .from('users')
       .select('*')
       .in('id', friendIds);
     if (uErr) throw uErr;
 
-    return (users || []).map(row => {
+    return (users || []).map((row: any) => {
       const user = rowToUser(row);
       if (this.statusCache.has(user.id)) user.status = this.statusCache.get(user.id)!;
       return user;
@@ -636,7 +641,7 @@ export class Database {
 
   async removeFriendship(userId1: string, userId2: string): Promise<boolean> {
     const [uid1, uid2] = [userId1, userId2].sort();
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('friendships')
       .delete()
       .eq('user_id1', uid1)

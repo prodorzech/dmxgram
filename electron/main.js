@@ -45,6 +45,11 @@ function startServer() {
   const basePath = isAsar ? appPath.replace('app.asar', 'app.asar.unpacked') : appPath;
   process.env.CLIENT_DIST_PATH = path.join(basePath, 'client', 'dist');
 
+  // Supabase credentials – must be set BEFORE requiring server because
+  // TypeScript compiles imports to require() calls that run before dotenv.config()
+  process.env.SUPABASE_URL              = process.env.SUPABASE_URL              || 'https://ablmfqqlpbvppviwozxa.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibG1mcXFscGJ2cHB2aXdvenhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTYwMjQ0OSwiZXhwIjoyMDg3MTc4NDQ5fQ._pQagB_5-qVN6Wz13DAROhL1BbDTiMNedfwJSixM03E';
+
   // Change cwd so any remaining relative paths resolve correctly
   try { process.chdir(serverRoot); } catch (_) {}
 
