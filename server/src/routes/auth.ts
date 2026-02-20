@@ -67,8 +67,10 @@ router.post('/register', async (req, res) => {
 
     await db.createUser(user);
 
-    // Add user to default server
-    await db.addServerMember('default-server', user.id);
+    // Add user to default server (best-effort – server may not exist)
+    try {
+      await db.addServerMember('default-server', user.id);
+    } catch (_) { /* default-server not present, skip */ }
 
     // Generate token
     const token = jwt.sign(

@@ -41,6 +41,12 @@ function App() {
         .then(() => {
           // Connect socket
           socketService.connect(token);
+
+          // When admin updates this user's restrictions/warnings, refresh state
+          socketService.on('user:updated', (updatedUser: any) => {
+            if (updatedUser) setUser(updatedUser);
+          });
+
           // Add a small delay for smooth transition
           setTimeout(() => {
             clearTimeout(loadingTimeout);
@@ -56,6 +62,7 @@ function App() {
 
       return () => {
         clearTimeout(loadingTimeout);
+        socketService.off('user:updated');
         socketService.disconnect();
       };
     } else {

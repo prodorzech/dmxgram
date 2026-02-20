@@ -4,6 +4,12 @@ import { db } from '../database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { UserRestriction, UserRestrictions } from '../types';
 import { generateRandomPassword } from '../utils/passwordValidation';
+import { getIO } from '../socket';
+
+// Helper: push updated user data to the affected user's socket room
+const emitUserUpdated = (userId: string, user: any) => {
+  try { getIO().to(`user:${userId}`).emit('user:updated', user); } catch (_) {}
+};
 
 const router: Router = express.Router();
 
@@ -61,6 +67,7 @@ router.post('/users/:userId/restrictions', authMiddleware, adminMiddleware, asyn
     }
     
     const updated = await db.updateUser(userId, { restrictions });
+    emitUserUpdated(userId, updated);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Set restrictions error:', error);
@@ -119,6 +126,7 @@ router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, async 
     }
     
     const updated = await db.getUserById(userId);
+    emitUserUpdated(userId, updated);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Add moderation error:', error);
@@ -142,6 +150,7 @@ router.delete('/users/:userId/restrictions/:index', authMiddleware, adminMiddlew
     }
     
     const updated = await db.getUserById(userId);
+    emitUserUpdated(userId, updated);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Remove restriction error:', error);
@@ -165,6 +174,7 @@ router.delete('/users/:userId/warnings/:index', authMiddleware, adminMiddleware,
     }
 
     const updated = await db.getUserById(userId);
+    emitUserUpdated(userId, updated);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Remove warning error:', error);
@@ -194,6 +204,7 @@ router.post('/users/:userId/clear-restrictions', authMiddleware, adminMiddleware
     });
     
     const updated = await db.getUserById(userId);
+    emitUserUpdated(userId, updated);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Clear restrictions error:', error);
