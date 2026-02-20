@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+﻿import express, { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
@@ -8,8 +8,8 @@ import { generateRandomPassword } from '../utils/passwordValidation';
 const router: Router = express.Router();
 
 // Admin middleware
-const adminMiddleware = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  const user = db.getUserById(req.userId!);
+const adminMiddleware = async (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  const user = await db.getUserById(req.userId!);
   
   if (!user || !user.isAdmin) {
     return res.status(403).json({ error: 'Brak uprawnień administratora' });
@@ -19,9 +19,9 @@ const adminMiddleware = (req: AuthRequest, res: express.Response, next: express.
 };
 
 // Get all users (admin only)
-router.get('/users', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.get('/users', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
-    const users = db.getAllUsers();
+    const users = await db.getAllUsers();
     
     // Remove passwords from response
     const sanitizedUsers = users.map(user => ({
@@ -50,17 +50,17 @@ router.get('/users', authMiddleware, adminMiddleware, (req: AuthRequest, res) =>
 });
 
 // Set user restrictions (admin only)
-router.post('/users/:userId/restrictions', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.post('/users/:userId/restrictions', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
     const { userId } = req.params;
     const { restrictions } = req.body as { restrictions: UserRestrictions };
     
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
     
-    const updated = db.updateUser(userId, { restrictions });
+    const updated = await db.updateUser(userId, { restrictions });
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Set restrictions error:', error);
@@ -69,7 +69,7 @@ router.post('/users/:userId/restrictions', authMiddleware, adminMiddleware, (req
 });
 
 // Add warning or restriction to user (admin only)
-router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
     const { userId } = req.params;
     const { type, reason, expiresIn, category } = req.body as { 
@@ -79,12 +79,12 @@ router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, (req: 
       category?: string;
     };
     
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
 
-    const adminUser = db.getUserById(req.userId!);
+    const adminUser = await db.getUserById(req.userId!);
     
     const moderation: UserRestriction = {
       type,
@@ -99,15 +99,15 @@ router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, (req: 
     if (type === 'warning') {
       const warnings = user.warnings || [];
       warnings.push(moderation);
-      db.updateUser(userId, { warnings });
+      await db.updateUser(userId, { warnings });
     } else if (type === 'restriction' || type === 'ban') {
       const activeRestrictions = user.activeRestrictions || [];
       activeRestrictions.push(moderation);
-      db.updateUser(userId, { activeRestrictions });
+      await db.updateUser(userId, { activeRestrictions });
       
       // If ban, set all restrictions
       if (type === 'ban') {
-        db.updateUser(userId, {
+        await db.updateUser(userId, {
           restrictions: {
             canAddFriends: false,
             canAcceptFriends: false,
@@ -118,7 +118,7 @@ router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, (req: 
       }
     }
     
-    const updated = db.getUserById(userId);
+    const updated = await db.getUserById(userId);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Add moderation error:', error);
@@ -127,21 +127,21 @@ router.post('/users/:userId/moderation', authMiddleware, adminMiddleware, (req: 
 });
 
 // Remove restriction from user (admin only)
-router.delete('/users/:userId/restrictions/:index', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.delete('/users/:userId/restrictions/:index', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
     const { userId, index } = req.params;
     
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
     
     if (user.activeRestrictions) {
       user.activeRestrictions.splice(parseInt(index), 1);
-      db.updateUser(userId, { activeRestrictions: user.activeRestrictions });
+      await db.updateUser(userId, { activeRestrictions: user.activeRestrictions });
     }
     
-    const updated = db.getUserById(userId);
+    const updated = await db.getUserById(userId);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Remove restriction error:', error);
@@ -150,21 +150,21 @@ router.delete('/users/:userId/restrictions/:index', authMiddleware, adminMiddlew
 });
 
 // Remove single warning from user (admin only)
-router.delete('/users/:userId/warnings/:index', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.delete('/users/:userId/warnings/:index', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
     const { userId, index } = req.params;
 
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
 
     if (user.warnings) {
       user.warnings.splice(parseInt(index), 1);
-      db.updateUser(userId, { warnings: user.warnings });
+      await db.updateUser(userId, { warnings: user.warnings });
     }
 
-    const updated = db.getUserById(userId);
+    const updated = await db.getUserById(userId);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Remove warning error:', error);
@@ -173,16 +173,16 @@ router.delete('/users/:userId/warnings/:index', authMiddleware, adminMiddleware,
 });
 
 // Clear all restrictions (admin only)
-router.post('/users/:userId/clear-restrictions', authMiddleware, adminMiddleware, (req: AuthRequest, res) => {
+router.post('/users/:userId/clear-restrictions', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   try {
     const { userId } = req.params;
     
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
     
-    db.updateUser(userId, {
+    await db.updateUser(userId, {
       restrictions: {
         canAddFriends: true,
         canAcceptFriends: true,
@@ -193,7 +193,7 @@ router.post('/users/:userId/clear-restrictions', authMiddleware, adminMiddleware
       warnings: []
     });
     
-    const updated = db.getUserById(userId);
+    const updated = await db.getUserById(userId);
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Clear restrictions error:', error);
@@ -206,7 +206,7 @@ router.post('/users/:userId/reset-password', authMiddleware, adminMiddleware, as
   try {
     const { userId } = req.params;
     
-    const user = db.getUserById(userId);
+    const user = await db.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -216,7 +216,7 @@ router.post('/users/:userId/reset-password', authMiddleware, adminMiddleware, as
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Update user with new password and force change flag
-    db.updateUser(userId, {
+    await db.updateUser(userId, {
       password: hashedPassword,
       mustChangePassword: true
     });

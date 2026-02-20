@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
@@ -10,7 +10,7 @@ import { getIO } from '../socket';
 const router = Router();
 
 // Send friend request
-router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, (req: AuthRequest, res: Response) => {
+router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, async (req: AuthRequest, res) => {
   try {
     const { username } = req.body;
     const senderId = req.userId!;
@@ -20,7 +20,7 @@ router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, (req: A
     }
 
     // Find receiver by username
-    const receiver = db.getUserByUsername(username);
+    const receiver = await db.getUserByUsername(username);
     if (!receiver) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -30,17 +30,18 @@ router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, (req: A
     }
 
     // Check if already friends
-    if (db.areFriends(senderId, receiver.id)) {
+    if (await db.areFriends(senderId, receiver.id)) {
       return res.status(400).json({ error: 'Już jesteście znajomymi' });
     }
 
     // Check if request already exists
-    const existingRequest = db.findExistingFriendRequest(senderId, receiver.id);
+    const existingRequest = await db.findExistingFriendRequest(senderId, receiver.id);
     if (existingRequest && existingRequest.status === 'pending') {
       return res.status(400).json({ error: 'Zaproszenie do znajomych już istnieje' });
     }
 
-    const sender = db.getUserById(senderId)!;
+    const sender = await db.getUserById(senderId);
+    if (!sender) return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     const request: FriendRequest = {
       id: uuidv4(),
       senderId,
@@ -50,7 +51,7 @@ router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, (req: A
       createdAt: new Date(),
     };
 
-    db.createFriendRequest(request);
+    await db.createFriendRequest(request);
 
     // Notify receiver via socket in real-time
     try {
@@ -66,10 +67,10 @@ router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, (req: A
 });
 
 // Get pending friend requests (received)
-router.get('/requests/pending', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/requests/pending', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
-    const requests = db.getPendingFriendRequests(userId);
+    const requests = await db.getPendingFriendRequests(userId);
     res.json(requests);
   } catch (error) {
     console.error('Error fetching friend requests:', error);
@@ -78,10 +79,10 @@ router.get('/requests/pending', authMiddleware, (req: AuthRequest, res: Response
 });
 
 // Get sent friend requests
-router.get('/requests/sent', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/requests/sent', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
-    const requests = db.getSentFriendRequests(userId);
+    const requests = await db.getSentFriendRequests(userId);
     res.json(requests);
   } catch (error) {
     console.error('Error fetching sent requests:', error);
@@ -90,12 +91,12 @@ router.get('/requests/sent', authMiddleware, (req: AuthRequest, res: Response) =
 });
 
 // Accept friend request
-router.post('/requests/:requestId/accept', authMiddleware, checkBanned, checkCanAcceptFriends, (req: AuthRequest, res: Response) => {
+router.post('/requests/:requestId/accept', authMiddleware, checkBanned, checkCanAcceptFriends, async (req: AuthRequest, res) => {
   try {
     const { requestId } = req.params;
     const userId = req.userId!;
 
-    const request = db.getFriendRequest(requestId);
+    const request = await db.getFriendRequest(requestId);
     if (!request) {
       return res.status(404).json({ error: 'Zaproszenie nie znalezione' });
     }
@@ -109,7 +110,7 @@ router.post('/requests/:requestId/accept', authMiddleware, checkBanned, checkCan
     }
 
     // Update request status
-    db.updateFriendRequestStatus(requestId, 'accepted');
+    await db.updateFriendRequestStatus(requestId, 'accepted');
 
     // Create friendship
     const friendship: Friendship = {
@@ -117,13 +118,13 @@ router.post('/requests/:requestId/accept', authMiddleware, checkBanned, checkCan
       userId2: request.receiverId,
       createdAt: new Date(),
     };
-    db.createFriendship(friendship);
+    await db.createFriendship(friendship);
 
     // Notify both users via socket
     try {
       const io = getIO();
-      const accepter = db.getUserById(userId);
-      const senderUser = db.getUserById(request.senderId);
+      const accepter = await db.getUserById(userId);
+      const senderUser = await db.getUserById(request.senderId);
       // Notify sender that request was accepted
       io.to(`user:${request.senderId}`).emit('friend:accepted', {
         requestId,
@@ -158,12 +159,12 @@ router.post('/requests/:requestId/accept', authMiddleware, checkBanned, checkCan
 });
 
 // Reject friend request
-router.post('/requests/:requestId/reject', authMiddleware, (req: AuthRequest, res: Response) => {
+router.post('/requests/:requestId/reject', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { requestId } = req.params;
     const userId = req.userId!;
 
-    const request = db.getFriendRequest(requestId);
+    const request = await db.getFriendRequest(requestId);
     if (!request) {
       return res.status(404).json({ error: 'Zaproszenie nie znalezione' });
     }
@@ -176,7 +177,7 @@ router.post('/requests/:requestId/reject', authMiddleware, (req: AuthRequest, re
       return res.status(400).json({ error: 'Zaproszenie już przetworzone' });
     }
 
-    db.updateFriendRequestStatus(requestId, 'rejected');
+    await db.updateFriendRequestStatus(requestId, 'rejected');
     res.json({ message: 'Zaproszenie odrzucone' });
   } catch (error) {
     console.error('Error rejecting friend request:', error);
@@ -185,10 +186,10 @@ router.post('/requests/:requestId/reject', authMiddleware, (req: AuthRequest, re
 });
 
 // Get friends list
-router.get('/', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
-    const friends = db.getFriends(userId).map(friend => ({
+    const friends = (await db.getFriends(userId)).map(friend => ({
       id: friend.id,
       username: friend.username,
       avatar: friend.avatar,
@@ -203,16 +204,16 @@ router.get('/', authMiddleware, (req: AuthRequest, res: Response) => {
 });
 
 // Remove friend
-router.delete('/:friendId', authMiddleware, (req: AuthRequest, res: Response) => {
+router.delete('/:friendId', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { friendId } = req.params;
 
-    if (!db.areFriends(userId, friendId)) {
+    if (!await db.areFriends(userId, friendId)) {
       return res.status(400).json({ error: 'Nie jesteście znajomymi' });
     }
 
-    db.removeFriendship(userId, friendId);
+    await db.removeFriendship(userId, friendId);
     res.json({ message: 'Znajomy usunięty' });
   } catch (error) {
     console.error('Error removing friend:', error);
@@ -221,16 +222,16 @@ router.delete('/:friendId', authMiddleware, (req: AuthRequest, res: Response) =>
 });
 
 // Get direct messages with a friend
-router.get('/:friendId/messages', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/:friendId/messages', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { friendId } = req.params;
 
-    if (!db.areFriends(userId, friendId)) {
+    if (!await db.areFriends(userId, friendId)) {
       return res.status(403).json({ error: 'Możesz wysyłać wiadomości tylko do znajomych' });
     }
 
-    const messages = db.getDirectMessages(userId, friendId);
+    const messages = await db.getDirectMessages(userId, friendId);
     res.json(messages);
   } catch (error) {
     console.error('Error fetching direct messages:', error);
@@ -239,16 +240,16 @@ router.get('/:friendId/messages', authMiddleware, (req: AuthRequest, res: Respon
 });
 
 // Get mutual friends
-router.get('/:friendId/mutual', authMiddleware, (req: AuthRequest, res: Response) => {
+router.get('/:friendId/mutual', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { friendId } = req.params;
 
-    if (!db.areFriends(userId, friendId)) {
+    if (!await db.areFriends(userId, friendId)) {
       return res.status(403).json({ error: 'Możesz sprawdzać wspólnych znajomych tylko ze znajomymi' });
     }
 
-    const mutualFriends = db.getMutualFriends(userId, friendId).map(friend => ({
+    const mutualFriends = (await db.getMutualFriends(userId, friendId)).map(friend => ({
       id: friend.id,
       username: friend.username,
       avatar: friend.avatar,

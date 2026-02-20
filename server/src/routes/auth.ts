@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+﻿import express, { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -44,11 +44,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user exists
-    if (db.getUserByEmail(email)) {
+    if (await db.getUserByEmail(email)) {
       return res.status(400).json({ error: 'Email już istnieje' });
     }
 
-    if (db.getUserByUsername(username)) {
+    if (await db.getUserByUsername(username)) {
       return res.status(400).json({ error: 'Nazwa użytkownika zajęta' });
     }
 
@@ -65,10 +65,10 @@ router.post('/register', async (req, res) => {
       status: 'offline'
     };
 
-    db.createUser(user);
+    await db.createUser(user);
 
     // Add user to default server
-    db.addServerMember('default-server', user.id);
+    await db.addServerMember('default-server', user.id);
 
     // Generate token
     const token = jwt.sign(
@@ -99,7 +99,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user
-    const user = db.getUserByEmail(email);
+    const user = await db.getUserByEmail(email);
     if (!user) {
       return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
     }
@@ -116,7 +116,7 @@ router.post('/login', async (req, res) => {
                      'Unknown';
     const language = req.headers['accept-language']?.split(',')[0] || 'pl-PL';
     
-    db.updateUser(user.id, {
+    await db.updateUser(user.id, {
       lastLoginIp: clientIp,
       language: language
     });
@@ -141,9 +141,9 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user
-router.get('/me', authMiddleware, (req: AuthRequest, res) => {
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const user = db.getUserById(req.userId!);
+    const user = await db.getUserById(req.userId!);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -162,7 +162,7 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
 
     if (username) {
       // Check if username is taken
-      const existingUser = db.getUserByUsername(username);
+      const existingUser = await db.getUserByUsername(username);
       if (existingUser && existingUser.id !== req.userId) {
         return res.status(400).json({ error: 'Nazwa użytkownika jest zajęta' });
       }
@@ -173,7 +173,7 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
     if (banner !== undefined) updates.banner = banner;
     if (bio !== undefined) updates.bio = bio;
 
-    const updatedUser = db.updateUser(req.userId!, updates);
+    const updatedUser = await db.updateUser(req.userId!, updates);
     if (!updatedUser) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -195,7 +195,7 @@ router.patch('/me/status', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     db.updateUserStatus(req.userId!, status);
-    const user = db.getUserById(req.userId!);
+    const user = await db.getUserById(req.userId!);
 
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
@@ -217,8 +217,8 @@ router.patch('/me/language', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Język jest wymagany' });
     }
 
-    db.updateUser(req.userId!, { language });
-    const user = db.getUserById(req.userId!);
+    await db.updateUser(req.userId!, { language });
+    const user = await db.getUserById(req.userId!);
 
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
@@ -236,8 +236,8 @@ router.patch('/me/custom-status', authMiddleware, async (req: AuthRequest, res) 
   try {
     const { customStatus } = req.body;
 
-    db.updateUser(req.userId!, { customStatus: customStatus || undefined });
-    const user = db.getUserById(req.userId!);
+    await db.updateUser(req.userId!, { customStatus: customStatus || undefined });
+    const user = await db.getUserById(req.userId!);
 
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
@@ -265,7 +265,7 @@ router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res)
       return res.status(400).json({ error: validation.errors.join(', ') });
     }
 
-    const user = db.getUserById(req.userId!);
+    const user = await db.getUserById(req.userId!);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -285,7 +285,7 @@ router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res)
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    db.updateUser(req.userId!, {
+    await db.updateUser(req.userId!, {
       password: hashedPassword,
       mustChangePassword: false
     });
@@ -311,7 +311,7 @@ router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res)
       return res.status(400).json({ error: validation.errors.join(', ') });
     }
 
-    const user = db.getUserById(req.userId!);
+    const user = await db.getUserById(req.userId!);
     if (!user) {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
@@ -331,7 +331,7 @@ router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res)
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    db.updateUser(req.userId!, {
+    await db.updateUser(req.userId!, {
       password: hashedPassword,
       mustChangePassword: false
     });

@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+﻿import express, { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../database';
 import { Server, Channel } from '../types';
@@ -7,9 +7,9 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 const router: Router = express.Router();
 
 // Get all user's servers
-router.get('/', authMiddleware, (req: AuthRequest, res) => {
+router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const servers = db.getUserServers(req.userId!);
+    const servers = await db.getUserServers(req.userId!);
     res.json(servers);
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -17,9 +17,9 @@ router.get('/', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Get server by ID
-router.get('/:serverId', authMiddleware, (req: AuthRequest, res) => {
+router.get('/:serverId', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -35,7 +35,7 @@ router.get('/:serverId', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Create server
-router.post('/', authMiddleware, (req: AuthRequest, res) => {
+router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { name, description } = req.body;
 
@@ -48,7 +48,7 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
       name,
       description,
       ownerId: req.userId!,
-      inviteCode: db.generateInviteCode(),
+      inviteCode: await db.generateInviteCode(),
       createdAt: new Date(),
       members: [req.userId!],
       channels: [
@@ -64,7 +64,7 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
     };
 
     server.channels[0].serverId = server.id;
-    db.createServer(server);
+    await db.createServer(server);
 
     res.status(201).json(server);
   } catch (error) {
@@ -73,9 +73,9 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Join server
-router.post('/:serverId/join', authMiddleware, (req: AuthRequest, res) => {
+router.post('/:serverId/join', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -84,7 +84,7 @@ router.post('/:serverId/join', authMiddleware, (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Już jesteś członkiem serwera' });
     }
 
-    db.addServerMember(server.id, req.userId!);
+    await db.addServerMember(server.id, req.userId!);
     res.json({ message: 'Dołączono do serwera', server });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -92,9 +92,9 @@ router.post('/:serverId/join', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Leave server
-router.post('/:serverId/leave', authMiddleware, (req: AuthRequest, res) => {
+router.post('/:serverId/leave', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -103,7 +103,7 @@ router.post('/:serverId/leave', authMiddleware, (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Właściciel nie może opuścić serwera' });
     }
 
-    db.removeServerMember(server.id, req.userId!);
+    await db.removeServerMember(server.id, req.userId!);
     res.json({ message: 'Opuszczono serwer' });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -111,9 +111,9 @@ router.post('/:serverId/leave', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Delete server
-router.delete('/:serverId', authMiddleware, (req: AuthRequest, res) => {
+router.delete('/:serverId', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -122,7 +122,7 @@ router.delete('/:serverId', authMiddleware, (req: AuthRequest, res) => {
       return res.status(403).json({ error: 'Tylko właściciel może usunąć serwer' });
     }
 
-    db.deleteServer(server.id);
+    await db.deleteServer(server.id);
     res.json({ message: 'Serwer usunięty' });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -130,10 +130,10 @@ router.delete('/:serverId', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Create channel
-router.post('/:serverId/channels', authMiddleware, (req: AuthRequest, res) => {
+router.post('/:serverId/channels', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { name, description, type = 'text' } = req.body;
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
 
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
@@ -152,7 +152,7 @@ router.post('/:serverId/channels', authMiddleware, (req: AuthRequest, res) => {
       createdAt: new Date()
     };
 
-    db.addChannel(server.id, channel);
+    await db.addChannel(server.id, channel);
     res.status(201).json(channel);
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -160,9 +160,9 @@ router.post('/:serverId/channels', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Delete channel
-router.delete('/:serverId/channels/:channelId', authMiddleware, (req: AuthRequest, res) => {
+router.delete('/:serverId/channels/:channelId', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -171,7 +171,7 @@ router.delete('/:serverId/channels/:channelId', authMiddleware, (req: AuthReques
       return res.status(403).json({ error: 'Tylko właściciel może usuwać kanały' });
     }
 
-    db.deleteChannel(server.id, req.params.channelId);
+    await db.deleteChannel(server.id, req.params.channelId);
     res.json({ message: 'Kanał usunięty' });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -179,9 +179,9 @@ router.delete('/:serverId/channels/:channelId', authMiddleware, (req: AuthReques
 });
 
 // Get channel messages
-router.get('/:serverId/channels/:channelId/messages', authMiddleware, (req: AuthRequest, res) => {
+router.get('/:serverId/channels/:channelId/messages', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -190,7 +190,7 @@ router.get('/:serverId/channels/:channelId/messages', authMiddleware, (req: Auth
       return res.status(403).json({ error: 'Brak dostępu' });
     }
 
-    const messages = db.getChannelMessages(req.params.channelId);
+    const messages = await db.getChannelMessages(req.params.channelId);
     res.json(messages);
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -198,7 +198,7 @@ router.get('/:serverId/channels/:channelId/messages', authMiddleware, (req: Auth
 });
 
 // Join server by invite code
-router.post('/join-by-code', authMiddleware, (req: AuthRequest, res) => {
+router.post('/join-by-code', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { inviteCode } = req.body;
 
@@ -206,7 +206,7 @@ router.post('/join-by-code', authMiddleware, (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Kod zaproszenia jest wymagany' });
     }
 
-    const server = db.getServerByInviteCode(inviteCode);
+    const server = await db.getServerByInviteCode(inviteCode);
     if (!server) {
       return res.status(404).json({ error: 'Nieprawidłowy kod zaproszenia' });
     }
@@ -215,7 +215,7 @@ router.post('/join-by-code', authMiddleware, (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Już jesteś członkiem tego serwera' });
     }
 
-    db.addServerMember(server.id, req.userId!);
+    await db.addServerMember(server.id, req.userId!);
     res.json({ message: 'Dołączono do serwera', server });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });
@@ -223,9 +223,9 @@ router.post('/join-by-code', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Get server invite code
-router.get('/:serverId/invite', authMiddleware, (req: AuthRequest, res) => {
+router.get('/:serverId/invite', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -241,9 +241,9 @@ router.get('/:serverId/invite', authMiddleware, (req: AuthRequest, res) => {
 });
 
 // Regenerate invite code (owner only)
-router.post('/:serverId/invite/regenerate', authMiddleware, (req: AuthRequest, res) => {
+router.post('/:serverId/invite/regenerate', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const server = db.getServerById(req.params.serverId);
+    const server = await db.getServerById(req.params.serverId);
     if (!server) {
       return res.status(404).json({ error: 'Serwer nie znaleziony' });
     }
@@ -252,7 +252,7 @@ router.post('/:serverId/invite/regenerate', authMiddleware, (req: AuthRequest, r
       return res.status(403).json({ error: 'Tylko właściciel może regenerować kod' });
     }
 
-    const newCode = db.regenerateInviteCode(server.id);
+    const newCode = await db.regenerateInviteCode(server.id);
     res.json({ inviteCode: newCode });
   } catch (error) {
     res.status(500).json({ error: 'Błąd serwera' });

@@ -1,4 +1,4 @@
-import { Server as HTTPServer } from 'http';
+﻿import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -44,7 +44,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     }
   });
 
-  io.on('connection', (socket: Socket) => {
+  io.on('connection', async (socket: Socket) => {
     const userId = (socket as any).userId;
     console.log(`User connected: ${userId}`);
 
@@ -59,29 +59,29 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.broadcast.emit('user:status', { userId, status: 'online' });
 
     // Join server rooms
-    const userServers = db.getUserServers(userId);
+    const userServers = await db.getUserServers(userId);
     userServers.forEach(server => {
       socket.join(`server:${server.id}`);
     });
 
     // Join channel
-    socket.on('channel:join', (data: { channelId: string }) => {
+    socket.on('channel:join', async (data: { channelId: string }) => {
       socket.join(`channel:${data.channelId}`);
       console.log(`User ${userId} joined channel ${data.channelId}`);
     });
 
     // Leave channel
-    socket.on('channel:leave', (data: { channelId: string }) => {
+    socket.on('channel:leave', async (data: { channelId: string }) => {
       socket.leave(`channel:${data.channelId}`);
     });
 
     // Send message
-    socket.on('message:send', (data: { channelId: string; content: string; serverId: string }) => {
+    socket.on('message:send', async (data: { channelId: string; content: string; serverId: string }) => {
       try {
-        const user = db.getUserById(userId);
+        const user = await db.getUserById(userId);
         if (!user) return;
 
-        const server = db.getServerById(data.serverId);
+        const server = await db.getServerById(data.serverId);
         if (!server || !server.members.includes(userId)) {
           socket.emit('error', { message: 'Brak dostępu do kanału' });
           return;
@@ -98,7 +98,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
           edited: false
         };
 
-        db.addMessage(message);
+        await db.addMessage(message);
 
         // Broadcast to all users in channel
         io.to(`channel:${data.channelId}`).emit('message:new', message);
@@ -109,9 +109,9 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Edit message
-    socket.on('message:edit', (data: { channelId: string; messageId: string; content: string }) => {
+    socket.on('message:edit', async (data: { channelId: string; messageId: string; content: string }) => {
       try {
-        const message = db.editMessage(data.channelId, data.messageId, data.content);
+        const message = await db.editMessage(data.channelId, data.messageId, data.content);
         if (message && message.userId === userId) {
           io.to(`channel:${data.channelId}`).emit('message:edited', message);
         }
@@ -121,10 +121,10 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Delete message
-    socket.on('message:delete', (data: { channelId: string; messageId: string }) => {
+    socket.on('message:delete', async (data: { channelId: string; messageId: string }) => {
       try {
         // In real app, check if user owns the message or is admin
-        db.deleteMessage(data.channelId, data.messageId);
+        await db.deleteMessage(data.channelId, data.messageId);
         io.to(`channel:${data.channelId}`).emit('message:deleted', {
           channelId: data.channelId,
           messageId: data.messageId
@@ -135,20 +135,20 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Direct Messages
-    socket.on('dm:join', (data: { friendId: string }) => {
+    socket.on('dm:join', async (data: { friendId: string }) => {
       const roomId = [userId, data.friendId].sort().join(':');
       socket.join(`dm:${roomId}`);
       console.log(`User ${userId} joined DM room with ${data.friendId}`);
     });
 
-    socket.on('dm:leave', (data: { friendId: string }) => {
+    socket.on('dm:leave', async (data: { friendId: string }) => {
       const roomId = [userId, data.friendId].sort().join(':');
       socket.leave(`dm:${roomId}`);
     });
 
-    socket.on('dm:send', (data: { friendId: string; content: string }) => {
+    socket.on('dm:send', async (data: { friendId: string; content: string }) => {
       try {
-        const user = db.getUserById(userId);
+        const user = await db.getUserById(userId);
         if (!user) return;
 
         // Check if user is banned
@@ -164,7 +164,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
         }
 
         // Check if they are friends
-        if (!db.areFriends(userId, data.friendId)) {
+        if (!await db.areFriends(userId, data.friendId)) {
           socket.emit('error', { message: 'Możesz wysyłać wiadomości tylko do znajomych' });
           return;
         }
@@ -182,7 +182,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
           read: false
         };
 
-        db.addDirectMessage(dm);
+        await db.addDirectMessage(dm);
 
         // Send to both users
         const roomId = [userId, data.friendId].sort().join(':');
@@ -193,8 +193,8 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       }
     });
 
-    socket.on('dm:typing:start', (data: { friendId: string }) => {
-      const user = db.getUserById(userId);
+    socket.on('dm:typing:start', async (data: { friendId: string }) => {
+      const user = await db.getUserById(userId);
       if (user) {
         const roomId = [userId, data.friendId].sort().join(':');
         socket.to(`dm:${roomId}`).emit('dm:typing:start', {
@@ -204,7 +204,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       }
     });
 
-    socket.on('dm:typing:stop', (data: { friendId: string }) => {
+    socket.on('dm:typing:stop', async (data: { friendId: string }) => {
       const roomId = [userId, data.friendId].sort().join(':');
       socket.to(`dm:${roomId}`).emit('dm:typing:stop', {
         friendId: userId
@@ -212,14 +212,14 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Status change
-    socket.on('status:change', (data: { status: 'online' | 'offline' | 'away' }) => {
+    socket.on('status:change', async (data: { status: 'online' | 'offline' | 'away' }) => {
       db.updateUserStatus(userId, data.status);
       socket.broadcast.emit('user:status', { userId, status: data.status });
     });
 
     // Typing indicator
-    socket.on('typing:start', (data: { channelId: string }) => {
-      const user = db.getUserById(userId);
+    socket.on('typing:start', async (data: { channelId: string }) => {
+      const user = await db.getUserById(userId);
       if (user) {
         socket.to(`channel:${data.channelId}`).emit('typing:start', {
           channelId: data.channelId,
@@ -229,7 +229,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       }
     });
 
-    socket.on('typing:stop', (data: { channelId: string }) => {
+    socket.on('typing:stop', async (data: { channelId: string }) => {
       socket.to(`channel:${data.channelId}`).emit('typing:stop', {
         channelId: data.channelId,
         userId
@@ -237,7 +237,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Disconnect
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       console.log(`User disconnected: ${userId}`);
       db.removeSession(socket.id);
       db.updateUserStatus(userId, 'offline');
