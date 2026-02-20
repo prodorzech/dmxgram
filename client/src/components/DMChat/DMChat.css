@@ -118,15 +118,13 @@
   gap: 12px;
   align-items: flex-start;
   animation: slideUp 0.3s ease-out;
-  transition: transform 0.2s;
+  transition: background 0.15s;
+  border-radius: 8px;
+  padding: 2px 4px;
 }
 
 .message:hover {
-  transform: scale(1.01);
-}
-
-.message.own {
-  flex-direction: row-reverse;
+  background: rgba(255,255,255,0.03);
 }
 
 .message-avatar {
@@ -165,12 +163,6 @@
   max-width: 70%;
 }
 
-.message.own .message-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
 .message-header {
   display: flex;
   align-items: baseline;
@@ -199,9 +191,126 @@
   line-height: 1.5;
 }
 
-.message.own .message-text {
-  background: var(--accent-primary);
-  color: white;
+.message-text.own-bubble {
+  background: rgba(220, 38, 38, 0.18);
+  border-left: 2px solid var(--accent-primary);
+}
+
+.own-name {
+  color: var(--accent-primary) !important;
+}
+
+.edited-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.message.reported .message-text {
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* Context menu */
+.ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--bg-secondary, #1a1a1a);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: slideUp 0.15s ease-out;
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.ctx-item:hover {
+  background: var(--bg-hover);
+}
+
+.ctx-item.ctx-danger {
+  color: #f87171;
+}
+
+.ctx-item.ctx-danger:hover {
+  background: rgba(220,38,38,0.15);
+}
+
+.ctx-item.ctx-warn {
+  color: #fbbf24;
+}
+
+.ctx-item.ctx-warn:hover {
+  background: rgba(245,158,11,0.1);
+}
+
+/* Inline edit form */
+.edit-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--accent-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.edit-input:focus {
+  outline: none;
+}
+
+.edit-confirm-btn,
+.edit-cancel-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.edit-confirm-btn {
+  background: rgba(16,185,129,0.2);
+  color: #10b981;
+}
+
+.edit-confirm-btn:hover {
+  background: rgba(16,185,129,0.35);
+}
+
+.edit-cancel-btn {
+  background: rgba(220,38,38,0.15);
+  color: #f87171;
+}
+
+.edit-cancel-btn:hover {
+  background: rgba(220,38,38,0.25);
 }
 
 .typing-indicator {

@@ -211,6 +211,31 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       });
     });
 
+    // Edit DM (only sender can edit)
+    socket.on('dm:edit', async (data: { friendId: string; messageId: string; content: string }) => {
+      try {
+        const updated = await db.editDirectMessage(userId, data.friendId, data.messageId, data.content);
+        if (!updated) return;
+        const roomId = [userId, data.friendId].sort().join(':');
+        io.to(`dm:${roomId}`).emit('dm:edited', updated);
+      } catch (error) {
+        console.error('DM edit error:', error);
+        socket.emit('error', { message: 'Failed to edit message' });
+      }
+    });
+
+    // Delete DM (only sender can delete)
+    socket.on('dm:delete', async (data: { friendId: string; messageId: string }) => {
+      try {
+        await db.deleteDirectMessage(userId, data.friendId, data.messageId);
+        const roomId = [userId, data.friendId].sort().join(':');
+        io.to(`dm:${roomId}`).emit('dm:deleted', { messageId: data.messageId });
+      } catch (error) {
+        console.error('DM delete error:', error);
+        socket.emit('error', { message: 'Failed to delete message' });
+      }
+    });
+
     // Status change
     socket.on('status:change', async (data: { status: 'online' | 'offline' | 'away' }) => {
       db.updateUserStatus(userId, data.status);

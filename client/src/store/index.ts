@@ -27,6 +27,8 @@ interface AppState {
   directMessages: DirectMessage[];
   setDirectMessages: (messages: DirectMessage[]) => void;
   addDirectMessage: (message: DirectMessage) => void;
+  updateDirectMessage: (id: string, content: string) => void;
+  removeDirectMessage: (id: string) => void;
 
   // UI State
   theme: 'dark' | 'light';
@@ -94,6 +96,16 @@ export const useStore = create<AppState>((set) => ({
   directMessages: [],
   setDirectMessages: (messages) => set({ directMessages: messages }),
   addDirectMessage: (message) => set((state) => ({ directMessages: [...state.directMessages, message] })),
+  updateDirectMessage: (id, content) =>
+    set((state) => ({
+      directMessages: state.directMessages.map((dm) =>
+        dm.id === id ? { ...dm, content, edited: true } : dm
+      )
+    })),
+  removeDirectMessage: (id) =>
+    set((state) => ({
+      directMessages: state.directMessages.filter((dm) => dm.id !== id)
+    })),
 
   // UI State
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
