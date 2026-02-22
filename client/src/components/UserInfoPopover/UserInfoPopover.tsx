@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Flag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '../../utils/imageUrl';
 import { UserBadges } from '../UserBadges/UserBadges';
+import { ReportModal } from '../ReportModal/ReportModal';
+import { useStore } from '../../store';
+import { api } from '../../services/api';
+import { useUI } from '../../context/UIContext';
 import './UserInfoPopover.css';
 
 interface UserInfoPopoverProps {
@@ -18,8 +22,32 @@ interface UserInfoPopoverProps {
 
 export function UserInfoPopover({ userId, username, avatar, bio, status, badges, onClose, position }: UserInfoPopoverProps) {
   const { t } = useTranslation();
+  const { user, token } = useStore();
+  const { toast } = useUI();
   const [idExpanded, setIdExpanded] = useState(false);
   const [copied,     setCopied]     = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
+  const handleReportSubmit = async (category: string, reason: string) => {
+    if (!user || !token) return;
+    try {
+      await api.reportMessage({
+        messageId: 'user_report',
+        messageContent: 'User report from popover',
+        reportedUserId: userId,
+        reportedUsername: username,
+        senderId: user.id,
+        receiverId: userId,
+        category,
+        reason,
+      }, token);
+      toast('Zgłoszenie zostało wysłane', 'success');
+      setShowReport(false);
+      onClose();
+    } catch {
+      toast('Nie udało się wysłać zgłoszenia', 'error');
+    }
+  };
 
   const getStatusColor = () => {
     switch (status) {
@@ -105,8 +133,25 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, badges,
               </div>
             )}
           </div>
+
+          {/* Report button — only visible if not viewing own profile */}
+          {user && user.id !== userId && (
+            <div className="popover-report-section">
+              <button className="popover-report-btn" onClick={() => setShowReport(true)}>
+                <Flag size={13} />
+                Zgłoś użytkownika
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      {showReport && (
+        <ReportModal
+          senderUsername={username}
+          onClose={() => setShowReport(false)}
+          onSubmit={handleReportSubmit}
+        />
+      )}
     </>
   );
 }

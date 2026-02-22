@@ -237,3 +237,30 @@
   line-height: 1.5;
   word-wrap: break-word;
 }
+
+/* ── Report section ───────────────────────────────────── */
+.popover-report-section {
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  padding-top: 8px;
+}
+
+.popover-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: #ef4444;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.popover-report-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}

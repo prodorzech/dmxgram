@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import './UIContext.css';
 
@@ -71,19 +72,22 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     <UIContext.Provider value={{ toast, confirm }}>
       {children}
 
-      {/* ── Toasts ────────────────────────────────────────────── */}
-      <div className="toast-container">
-        {toasts.map(t => (
-          <div key={t.id} className={`toast toast-${t.type}`} onClick={() => dismissToast(t.id)}>
-            <span className="toast-icon">{icons[t.type]}</span>
-            <span className="toast-message">{t.message}</span>
-            <button className="toast-close" onClick={e => { e.stopPropagation(); dismissToast(t.id); }}>×</button>
-          </div>
-        ))}
-      </div>
+      {/* ── Toasts (portal → body avoids position:fixed breaking inside filter/transform parents) ── */}
+      {createPortal(
+        <div className="toast-container">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast toast-${t.type}`} onClick={() => dismissToast(t.id)}>
+              <span className="toast-icon">{icons[t.type]}</span>
+              <span className="toast-message">{t.message}</span>
+              <button className="toast-close" onClick={e => { e.stopPropagation(); dismissToast(t.id); }}>×</button>
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
 
-      {/* ── Confirm dialog ────────────────────────────────────── */}
-      {confirmState.open && (
+      {/* ── Confirm dialog (portal → body) ───────────────────── */}
+      {confirmState.open && createPortal(
         <div className="confirm-overlay" onClick={() => handleConfirmAnswer(false)}>
           <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
             <p className="confirm-message">{confirmState.message}</p>
@@ -96,7 +100,8 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </UIContext.Provider>
   );

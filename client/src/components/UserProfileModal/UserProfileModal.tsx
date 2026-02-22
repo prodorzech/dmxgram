@@ -1,7 +1,12 @@
-import { X, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { X, MessageCircle, Flag } from 'lucide-react';
 import { Friend } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
 import { UserBadges } from '../UserBadges/UserBadges';
+import { ReportModal } from '../ReportModal/ReportModal';
+import { useStore } from '../../store';
+import { api } from '../../services/api';
+import { useUI } from '../../context/UIContext';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -11,6 +16,30 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfileModalProps) {
+  const { user, token } = useStore();
+  const { toast } = useUI();
+  const [showReport, setShowReport] = useState(false);
+
+  const handleReportSubmit = async (category: string, reason: string) => {
+    if (!user || !token) return;
+    try {
+      await api.reportMessage({
+        messageId: 'user_report',
+        messageContent: 'User profile report',
+        reportedUserId: friend.id,
+        reportedUsername: friend.username,
+        senderId: user.id,
+        receiverId: friend.id,
+        category,
+        reason,
+      }, token);
+      toast('Zgłoszenie zostało wysłane', 'success');
+      setShowReport(false);
+      onClose();
+    } catch {
+      toast('Nie udało się wysłać zgłoszenia', 'error');
+    }
+  };
   const getStatusColor = () => {
     switch (friend.status) {
       case 'online': return '#10b981';
@@ -77,10 +106,23 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
                   Wyślij wiadomość
                 </button>
               )}
+              {user && user.id !== friend.id && (
+                <button className="action-button danger" onClick={() => setShowReport(true)}>
+                  <Flag size={18} />
+                  Zgłoś użytkownika
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
+      {showReport && (
+        <ReportModal
+          senderUsername={friend.username}
+          onClose={() => setShowReport(false)}
+          onSubmit={handleReportSubmit}
+        />
+      )}
     </div>
   );
 }

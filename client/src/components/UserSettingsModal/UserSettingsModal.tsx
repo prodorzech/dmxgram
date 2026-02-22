@@ -1,11 +1,25 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../services/api';
-import { X, User as UserIcon, Upload, Moon, Sun, Globe, AlertTriangle, Layers, Bell } from 'lucide-react';
+import {
+  X, User as UserIcon, Upload, Moon, Sun, Globe, AlertTriangle, Layers, Bell,
+  Palette, ImageOff, CheckCircle2, Ban, Shield, Calendar, Mail, Star
+} from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import './UserSettingsModal.css';
+
+// ── Accent colours palette ────────────────────────────────────────────────────
+const ACCENT_COLORS = [
+  { label: 'Czerwony',  value: '#dc2626', hover: '#b91c1c', shadow: 'rgba(220,38,38,0.35)'  },
+  { label: 'Różowy',    value: '#ec4899', hover: '#db2777', shadow: 'rgba(236,72,153,0.35)'  },
+  { label: 'Niebieski', value: '#3b82f6', hover: '#2563eb', shadow: 'rgba(59,130,246,0.35)'  },
+  { label: 'Zielony',   value: '#22c55e', hover: '#16a34a', shadow: 'rgba(34,197,94,0.35)'   },
+  { label: 'Pomarańcz', value: '#f97316', hover: '#ea580c', shadow: 'rgba(249,115,22,0.35)'  },
+  { label: 'Żółty',     value: '#eab308', hover: '#ca8a04', shadow: 'rgba(234,179,8,0.35)'   },
+  { label: 'Fioletowy', value: '#a855f7', hover: '#9333ea', shadow: 'rgba(168,85,247,0.35)'  },
+];
 
 interface UserSettingsModalProps {
   onClose: () => void;
@@ -27,6 +41,12 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   );
   const [desktopNotif, setDesktopNotif] = useState<boolean>(
     () => localStorage.getItem('dmx-desktop-notifications') !== 'false'
+  );
+  const [accentColor, setAccentColor] = useState<string>(
+    () => localStorage.getItem('dmx-accent-color') || '#dc2626'
+  );
+  const [noBg, setNoBg] = useState<boolean>(
+    () => localStorage.getItem('dmx-no-bg') === 'true'
   );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,6 +96,21 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
     const next = !desktopNotif;
     setDesktopNotif(next);
     localStorage.setItem('dmx-desktop-notifications', next.toString());
+  };
+
+  const handleAccentChange = (color: typeof ACCENT_COLORS[0]) => {
+    setAccentColor(color.value);
+    localStorage.setItem('dmx-accent-color', color.value);
+    document.documentElement.style.setProperty('--accent-primary', color.value);
+    document.documentElement.style.setProperty('--accent-hover',   color.hover);
+    document.documentElement.style.setProperty('--accent-active',  color.hover);
+  };
+
+  const handleNoBgToggle = () => {
+    const next = !noBg;
+    setNoBg(next);
+    localStorage.setItem('dmx-no-bg', next.toString());
+    window.dispatchEvent(new CustomEvent('dmx-nobg-changed', { detail: { noBg: next } }));
   };
 
   const handleLanguageChange = async (languageCode: string) => {
@@ -435,13 +470,101 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
               </div>
             </div>
 
+            {/* Accent colour picker */}
+            <div className="form-group">
+              <label>
+                <Palette size={16} />
+                Kolor akcentu
+              </label>
+              <div className="accent-colors-grid">
+                {ACCENT_COLORS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.label}
+                    className={`accent-color-swatch${accentColor === c.value ? ' selected' : ''}`}
+                    style={{ '--swatch-color': c.value, '--swatch-shadow': c.shadow } as React.CSSProperties}
+                    onClick={() => handleAccentChange(c)}
+                  />
+                ))}
+              </div>
+              <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>
+                Zmień kolor przycisków i elementów aplikacji
+              </small>
+            </div>
+
+            {/* Remove background */}
+            <div className="form-group">
+              <label>
+                <ImageOff size={16} />
+                Tło aplikacji
+              </label>
+              <div className="notif-toggle-row">
+                <small style={{ color: 'var(--text-muted)' }}>
+                  {noBg ? 'Tło jest wyłączone' : 'Tło jest włączone'}
+                </small>
+                <button
+                  type="button"
+                  className={`notif-toggle-btn ${noBg ? 'active' : ''}`}
+                  onClick={handleNoBgToggle}
+                  disabled={loading}
+                >
+                  {noBg ? 'Włącz tło' : 'Usuń tło'}
+                </button>
+              </div>
+            </div>
+
           </div>
           </>)}
 
           {activeTab === 'account' && (<>
             <div className="account-status-section">
               <h3>{t('user.accountStatus')}</h3>
-              
+
+              {/* ── Account overview card ─────────────────────────── */}
+              {(() => {
+                const isBanned = user.restrictions?.isBanned;
+                const hasActiveRestrictions = user.activeRestrictions && user.activeRestrictions.length > 0;
+                const hasWarnings = user.warnings && user.warnings.length > 0;
+                const isGood = !isBanned && !hasActiveRestrictions;
+                const joinDate = user.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' })
+                  : '—';
+                const maskedEmail = user.email
+                  ? (() => {
+                      const [local, domain] = user.email.split('@');
+                      const masked = local.length > 3
+                        ? local[0] + '•'.repeat(local.length - 2) + local[local.length - 1]
+                        : local[0] + '•'.repeat(local.length - 1);
+                      return `${masked}@${domain}`;
+                    })()
+                  : '—';
+                return (
+                  <div className={`account-overview-card ${isBanned ? 'banned' : isGood ? 'good' : 'restricted'}`}>
+                    <div className="account-overview-icon">
+                      {isBanned    ? <Ban size={36} />        :
+                       isGood      ? <CheckCircle2 size={36} /> :
+                                   <Shield size={36} />}
+                    </div>
+                    <div className="account-overview-info">
+                      <div className="account-overview-status">
+                        {isBanned    ? 'Konto zablokowane'      :
+                         hasActiveRestrictions ? 'Konto z ograniczeniami' :
+                         hasWarnings  ? 'Konto z ostrzeżeniami'  :
+                                       'Konto w dobrym stanie'}
+                      </div>
+                      <div className="account-overview-meta">
+                        <span><Calendar size={13} /> Dołączono: {joinDate}</span>
+                        <span><Mail size={13} /> {maskedEmail}</span>
+                        {user.badges && user.badges.length > 0 && (
+                          <span><Star size={13} /> {user.badges.length} odznaka/-i/-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Account Restrictions Status */}
               <div className="restrictions-status">
                 <h4>{t('user.currentRestrictions')}</h4>

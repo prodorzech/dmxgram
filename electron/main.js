@@ -56,8 +56,8 @@ function startServer() {
   process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibG1mcXFscGJ2cHB2aXdvenhhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTYwMjQ0OSwiZXhwIjoyMDg3MTc4NDQ5fQ._pQagB_5-qVN6Wz13DAROhL1BbDTiMNedfwJSixM03E';
 
   // Resend email API key — paste your key from resend.com/api-keys
-  process.env.RESEND_API_KEY   = process.env.RESEND_API_KEY   || 'PASTE_YOUR_RESEND_API_KEY_HERE';
-  process.env.RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'DMXGram <noreply@dmxgram.app>';
+  process.env.RESEND_API_KEY   = process.env.RESEND_API_KEY   || 're_bRM7JFSS_6xr9EgR6XvuMNSGE2Q8F4iWY';
+  process.env.RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'DMXGram <noreply@dmxgram.eu>';
 
   // Change cwd so any remaining relative paths resolve correctly
   try { process.chdir(serverRoot); } catch (_) {}

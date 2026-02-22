@@ -32,6 +32,39 @@ export function Dashboard() {
     return () => window.removeEventListener('dmx-blur-changed', applyBlur);
   }, []);
 
+  // Restore accent colour from localStorage on mount
+  useEffect(() => {
+    const accent = localStorage.getItem('dmx-accent-color');
+    if (accent) {
+      // Find matching hover colour
+      const ACCENT_MAP: Record<string, { hover: string }> = {
+        '#dc2626': { hover: '#b91c1c' },
+        '#ec4899': { hover: '#db2777' },
+        '#3b82f6': { hover: '#2563eb' },
+        '#22c55e': { hover: '#16a34a' },
+        '#f97316': { hover: '#ea580c' },
+        '#eab308': { hover: '#ca8a04' },
+        '#a855f7': { hover: '#9333ea' },
+      };
+      const meta = ACCENT_MAP[accent];
+      document.documentElement.style.setProperty('--accent-primary', accent);
+      if (meta) {
+        document.documentElement.style.setProperty('--accent-hover',  meta.hover);
+        document.documentElement.style.setProperty('--accent-active', meta.hover);
+      }
+    }
+  }, []);
+
+  // No-background toggle — live updates from settings
+  const [noBg, setNoBg] = useState(() => localStorage.getItem('dmx-no-bg') === 'true');
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setNoBg((e as CustomEvent).detail?.noBg ?? false);
+    };
+    window.addEventListener('dmx-nobg-changed', handler);
+    return () => window.removeEventListener('dmx-nobg-changed', handler);
+  }, []);
+
   // Check if user needs to change password
   useEffect(() => {
     if (user?.mustChangePassword) {
@@ -60,22 +93,24 @@ export function Dashboard() {
 
   const bannerUrl = user?.banner ? getImageUrl(user.banner) : null;
   const isGif = bannerUrl ? bannerUrl.toLowerCase().includes('.gif') : false;
+  // Effective banner: hidden when noBg is set
+  const effectiveBanner = noBg ? null : bannerUrl;
 
   return (
     <div className="dashboard">
       {/* Blurred background layer — always rendered; uses banner if set, otherwise a subtle gradient */}
-      {bannerUrl && isGif ? (
+      {effectiveBanner && isGif ? (
         <img
           className="dashboard-bg dashboard-bg-gif"
-          src={bannerUrl}
+          src={effectiveBanner}
           alt=""
           aria-hidden="true"
         />
       ) : (
         <div
           className="dashboard-bg"
-          style={bannerUrl
-            ? { backgroundImage: `url(${bannerUrl})` }
+          style={effectiveBanner
+            ? { backgroundImage: `url(${effectiveBanner})` }
             : { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }
           }
         />

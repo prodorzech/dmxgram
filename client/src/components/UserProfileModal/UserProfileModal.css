@@ -211,6 +211,19 @@
   background: var(--bg-tertiary);
 }
 
+.action-button.danger {
+  background: rgba(220, 38, 38, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.action-button.danger:hover {
+  background: rgba(220, 38, 38, 0.25);
+  border-color: #ef4444;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
 @media (max-width: 480px) {
   .user-profile-modal {
     max-width: 95%;

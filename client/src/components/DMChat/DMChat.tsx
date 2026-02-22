@@ -65,6 +65,9 @@ export const DMChat: React.FC = () => {
   const isFirstLoadRef = useRef(true);
   const pendingInstantScrollRef = useRef(false);
   const lastReceivedCountRef = useRef<number>(0);
+  // Anti-spam: track timestamp of last N messages to detect burst sending
+  const msgTimestampsRef = useRef<number[]>([]);
+  const spamCooldownRef = useRef<number | null>(null);
 
   // ── Media message helpers ──────────────────────────────────────────────
   const MEDIA_PREFIX = '__DMX_MEDIA__:';
@@ -265,6 +268,28 @@ export const DMChat: React.FC = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!message.trim() && attachedFiles.length === 0) || !currentFriend) return;
+
+    // ── Anti-spam: max 5 messages within any 5-second window ──────────────
+    const nowTs = Date.now();
+    // If still in an active cooldown, block sending
+    if (spamCooldownRef.current && nowTs < spamCooldownRef.current) {
+      const remaining = Math.ceil((spamCooldownRef.current - nowTs) / 1000);
+      toast(`⏳ Wysyłasz za szybko! Poczekaj ${remaining}s`, 'warning');
+      return;
+    }
+    // Purge timestamps older than 5 s
+    msgTimestampsRef.current = msgTimestampsRef.current.filter(t => nowTs - t < 5000);
+    if (msgTimestampsRef.current.length >= 5) {
+      // Triggered – cool down until the oldest stamp + 5s
+      const cooldownUntil = msgTimestampsRef.current[0] + 5000;
+      spamCooldownRef.current = cooldownUntil;
+      const remaining = Math.ceil((cooldownUntil - nowTs) / 1000);
+      toast(`⏳ Wysyłasz za szybko! Poczekaj ${remaining}s`, 'warning');
+      return;
+    }
+    msgTimestampsRef.current.push(nowTs);
+    spamCooldownRef.current = null;
+    // ─────────────────────────────────────────────────────────────────────
 
     if (attachedFiles.length > 0) {
       // Upload files first, then send encoded message
