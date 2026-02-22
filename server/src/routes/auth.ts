@@ -67,25 +67,54 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Store pending verification in memory and send code by email
+    // Try to send verification email; if it fails, create account directly
     const code = generateVerificationCode();
-    pendingVerifications.set(email, {
-      code,
-      username,
-      email,
-      hashedPassword,
-      expires: Date.now() + 15 * 60 * 1000 // 15 min
-    });
-
+    let emailSent = false;
     try {
       await sendVerificationEmail(email, username, code);
+      emailSent = true;
     } catch (emailErr) {
-      pendingVerifications.delete(email);
-      console.error('Email send error:', emailErr);
-      return res.status(500).json({ error: 'Failed to send verification email' });
+      console.error('Email send error (falling back to direct registration):', emailErr);
     }
 
-    res.status(200).json({ needsVerification: true, email });
+    if (emailSent) {
+      pendingVerifications.set(email, {
+        code,
+        username,
+        email,
+        hashedPassword,
+        expires: Date.now() + 15 * 60 * 1000 // 15 min
+      });
+      return res.status(200).json({ needsVerification: true, email });
+    }
+
+    // Email not available – create account immediately (emailVerified = true)
+    const userId = uuidv4();
+    const newUser: User = {
+      id: userId,
+      username,
+      email,
+      password: hashedPassword,
+      avatar: null,
+      banner: null,
+      bio: null,
+      customStatus: null,
+      createdAt: new Date().toISOString(),
+      status: 'online',
+      language: 'pl',
+      isAdmin: false,
+      mustChangePassword: false,
+      restrictions: [],
+      warnings: [],
+      activeRestrictions: [],
+      badges: [],
+      emailVerified: true,
+    } as unknown as User;
+
+    await db.createUser(newUser);
+
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET || 'dmxgram_super_secret_key_2024', { expiresIn: '7d' });
+    res.status(201).json({ token, user: serializeUser(newUser) });
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ error: 'Błąd serwera' });
