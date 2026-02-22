@@ -637,7 +637,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                         disabled={badgesLoading}
                         title={active ? `Zabierz odznakę ${badge.label}` : `Nadaj odznakę ${badge.label}`}
                       >
-                        <span className="badge-toggle-icon">{badge.icon}</span>
+                        <span className="badge-toggle-icon"><badge.Icon size={18} /></span>
                         <span className="badge-toggle-label">{badge.label}</span>
                         <span className="badge-toggle-status">{active ? '✓' : '+'}</span>
                       </button>
