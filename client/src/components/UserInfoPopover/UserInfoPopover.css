@@ -8,6 +8,12 @@
   background: transparent;
 }
 
+/* Hide badge tooltips inside the popover — they'd clip outside and duplicate visually */
+.user-info-popover .user-badge::after,
+.user-info-popover .user-badge::before {
+  display: none;
+}
+
 .user-info-popover {
   position: fixed;
   z-index: 1000;
