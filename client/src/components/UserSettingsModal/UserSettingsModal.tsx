@@ -104,6 +104,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
     document.documentElement.style.setProperty('--accent-primary', color.value);
     document.documentElement.style.setProperty('--accent-hover',   color.hover);
     document.documentElement.style.setProperty('--accent-active',  color.hover);
+    document.documentElement.style.setProperty('--accent-shadow',  color.shadow);
   };
 
   const handleNoBgToggle = () => {
@@ -474,7 +475,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
             <div className="form-group">
               <label>
                 <Palette size={16} />
-                Kolor akcentu
+                {t('user.accentColor')}
               </label>
               <div className="accent-colors-grid">
                 {ACCENT_COLORS.map(c => (
@@ -489,7 +490,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 ))}
               </div>
               <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>
-                Zmień kolor przycisków i elementów aplikacji
+                {t('user.accentColorHint')}
               </small>
             </div>
 
@@ -497,11 +498,11 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
             <div className="form-group">
               <label>
                 <ImageOff size={16} />
-                Tło aplikacji
+                {t('user.bgTitle')}
               </label>
               <div className="notif-toggle-row">
                 <small style={{ color: 'var(--text-muted)' }}>
-                  {noBg ? 'Tło jest wyłączone' : 'Tło jest włączone'}
+                  {noBg ? t('user.bgDisabled') : t('user.bgEnabled')}
                 </small>
                 <button
                   type="button"
@@ -509,7 +510,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                   onClick={handleNoBgToggle}
                   disabled={loading}
                 >
-                  {noBg ? 'Włącz tło' : 'Usuń tło'}
+                  {noBg ? t('user.restoreBg') : t('user.removeBg')}
                 </button>
               </div>
             </div>
@@ -548,16 +549,16 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                     </div>
                     <div className="account-overview-info">
                       <div className="account-overview-status">
-                        {isBanned    ? 'Konto zablokowane'      :
-                         hasActiveRestrictions ? 'Konto z ograniczeniami' :
-                         hasWarnings  ? 'Konto z ostrzeżeniami'  :
-                                       'Konto w dobrym stanie'}
+                      {isBanned              ? t('user.accountBanned')     :
+                       hasActiveRestrictions  ? t('user.accountRestricted') :
+                       hasWarnings            ? t('user.accountWarnings')   :
+                                               t('user.accountGood')}
                       </div>
                       <div className="account-overview-meta">
-                        <span><Calendar size={13} /> Dołączono: {joinDate}</span>
+                        <span><Calendar size={13} /> {t('user.accountJoined')}: {joinDate}</span>
                         <span><Mail size={13} /> {maskedEmail}</span>
                         {user.badges && user.badges.length > 0 && (
-                          <span><Star size={13} /> {user.badges.length} odznaka/-i/-</span>
+                          <span><Star size={13} /> {t('user.accountBadgesCount', { count: user.badges.length })}</span>
                         )}
                       </div>
                     </div>

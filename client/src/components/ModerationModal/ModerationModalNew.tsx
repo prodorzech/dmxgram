@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, Shield, Ban, Key, Info, Clock, User as UserIcon, Megaphone, UserX, XOctagon, MessageSquareWarning, Users2, FileText, Award } from 'lucide-react';
 import { UserRestrictions, UserRestriction } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -39,6 +40,19 @@ const WARNING_CATEGORIES = [
 
 export function ModerationModalNew({ user, token, onClose, onUpdate }: ModerationModalProps) {
   const { toast, confirm: uiConfirm } = useUI();
+  const { t } = useTranslation();
+
+  const getCatLabel = (value: string): string => {
+    const map: Record<string, string> = {
+      spam: t('report.catSpam'),
+      harassment: t('report.catHarassment'),
+      inappropriate: t('report.catInappropriate'),
+      language: t('report.catLanguage'),
+      impersonation: t('report.catImpersonation'),
+      other: t('report.catOther'),
+    };
+    return map[value] || value;
+  };
   const [activeTab, setActiveTab] = useState<'info' | 'warnings' | 'restrictions' | 'actions' | 'badges'>('info');
   const [localBadges, setLocalBadges] = useState<string[]>(user.badges || []);
   const [badgesLoading, setBadgesLoading] = useState(false);
@@ -71,14 +85,14 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
       });
       if (response.ok) {
         setLocalBadges(newBadges);
-        toast('Odznaki zaktualizowane', 'success');
+        toast(t('admin.badgesUpdated'), 'success');
         onUpdate();
       } else {
-        toast('Błąd aktualizacji odznak', 'error');
+        toast(t('admin.badgesError'), 'error');
       }
     } catch (error) {
       console.error('Error updating badges:', error);
-      toast('Błąd połączenia', 'error');
+      toast(t('admin.connError'), 'error');
     } finally {
       setBadgesLoading(false);
     }
@@ -86,7 +100,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
 
   const handleAddModeration = async () => {
     if (!reason.trim()) {
-      toast('Please enter a reason', 'warning');
+      toast(t('admin.modEnterReason'), 'warning');
       return;
     }
 
@@ -270,14 +284,14 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
             onClick={() => setActiveTab('info')}
           >
             <Info size={18} />
-            Informacje
+            {t('admin.tabInfo')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'warnings' ? 'active' : ''}`}
             onClick={() => setActiveTab('warnings')}
           >
             <AlertTriangle size={18} />
-            Ostrzeżenia
+            {t('admin.tabWarnings')}
             {user.warnings && user.warnings.length > 0 && (
               <span className="tab-badge">{user.warnings.length}</span>
             )}
@@ -287,7 +301,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
             onClick={() => setActiveTab('restrictions')}
           >
             <Shield size={18} />
-            Ograniczenia
+            {t('admin.tabRestrictions')}
             {user.activeRestrictions && user.activeRestrictions.length > 0 && (
               <span className="tab-badge">{user.activeRestrictions.length}</span>
             )}
@@ -297,14 +311,14 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
             onClick={() => setActiveTab('actions')}
           >
             <Ban size={18} />
-            Akcje
+            {t('admin.tabActions')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'badges' ? 'active' : ''}`}
             onClick={() => setActiveTab('badges')}
           >
             <Award size={18} />
-            Odznaki
+            {t('admin.tabBadges')}
             {localBadges.length > 0 && (
               <span className="tab-badge">{localBadges.length}</span>
             )}
@@ -320,11 +334,11 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 <div className="info-card">
                   <div className="info-card-header">
                     <UserIcon size={20} />
-                    <h3>Dane użytkownika</h3>
+                    <h3>{t('admin.modUserData')}</h3>
                   </div>
                   <div className="info-items">
                     <div className="info-item">
-                      <span className="info-label">Nazwa użytkownika:</span>
+                      <span className="info-label">{t('admin.modUsernameLabel')}</span>
                       <span className="info-value">{user.username}</span>
                     </div>
                     <div className="info-item">
@@ -332,16 +346,16 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                       <span className="info-value">{user.email}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Bio:</span>
-                      <span className="info-value">{user.bio || 'Brak'}</span>
+                      <span className="info-label">{t('admin.modBioLabel')}</span>
+                      <span className="info-value">{user.bio || t('admin.modNone')}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Avatar:</span>
-                      <span className="info-value">{user.avatar ? '✓ Ustawiony' : '✗ Brak'}</span>
+                      <span className="info-label">{t('admin.modAvatarLabel')}</span>
+                      <span className="info-value">{user.avatar ? t('admin.modSet') : t('admin.modNotSet')}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Banner:</span>
-                      <span className="info-value">{user.banner ? '✓ Ustawiony' : '✗ Brak'}</span>
+                      <span className="info-label">{t('admin.modBannerLabel')}</span>
+                      <span className="info-value">{user.banner ? t('admin.modSet') : t('admin.modNotSet')}</span>
                     </div>
                   </div>
                 </div>
@@ -349,23 +363,23 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 <div className="info-card">
                   <div className="info-card-header">
                     <Clock size={20} />
-                    <h3>Aktywność</h3>
+                    <h3>{t('admin.modActivity')}</h3>
                   </div>
                   <div className="info-items">
                     <div className="info-item">
-                      <span className="info-label">Data rejestracji:</span>
+                      <span className="info-label">{t('admin.modRegDate')}</span>
                       <span className="info-value">{formatDate(user.createdAt)}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Ostatnie IP:</span>
-                      <span className="info-value">{user.lastLoginIp || 'Brak danych'}</span>
+                      <span className="info-label">{t('admin.modLastIp')}</span>
+                      <span className="info-value">{user.lastLoginIp || t('admin.modNoData')}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Kraj:</span>
-                      <span className="info-value">{user.lastLoginCountry || 'Nieznany'}</span>
+                      <span className="info-label">{t('admin.modCountry')}</span>
+                      <span className="info-value">{user.lastLoginCountry || t('admin.modUnknown')}</span>
                     </div>
                     <div className="info-item">
-                      <span className="info-label">Język:</span>
+                      <span className="info-label">{t('admin.modLanguageLabel')}</span>
                       <span className="info-value">{user.language || 'pl-PL'}</span>
                     </div>
                   </div>
@@ -380,7 +394,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
               <div className="add-warning-section">
                 <h3>
                   <AlertTriangle size={20} />
-                  Dodaj ostrzeżenie
+                  {t('admin.modAddWarning')}
                 </h3>
 
                 <div className="warning-categories">
@@ -396,31 +410,31 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                         } as React.CSSProperties}
                       >
                         <span className="category-icon"><IconComponent size={28} /></span>
-                        <span className="category-label">{cat.label}</span>
+                        <span className="category-label">{getCatLabel(cat.value)}</span>
                       </button>
                     );
                   })}
                 </div>
 
                 <div className="form-group">
-                  <label>Powód ostrzeżenia</label>
+                  <label>{t('admin.modWarningReason')}</label>
                   <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Opisz szczegółowo powód ostrzeżenia..."
+                    placeholder={t('admin.modWarningReasonPlaceholder')}
                     rows={4}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Wygasa za (minuty) - opcjonalne</label>
+                  <label>{t('admin.modExpiresIn')}</label>
                   <input
                     type="number"
                     value={expiresIn}
                     onChange={(e) => setExpiresIn(e.target.value ? Number(e.target.value) : '')}
-                    placeholder="np. 60 = 1h, 1440 = 24h"
+                    placeholder={t('admin.modExpiresPlaceholder')}
                   />
-                  <small>Pozostaw puste dla permanentnego</small>
+                  <small>{t('admin.modPermanent')}</small>
                 </div>
 
                 <button
@@ -429,13 +443,13 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                   className="add-warning-btn"
                 >
                   <AlertTriangle size={16} />
-                  Dodaj ostrzeżenie
+                  {t('admin.modAddWarning')}
                 </button>
               </div>
 
               {/* Warnings History */}
               <div className="warnings-history">
-                <h3>Historia ostrzeżeń ({user.warnings?.length || 0})</h3>
+                <h3>{t('admin.modWarningHistoryTitle', { count: user.warnings?.length || 0 })}</h3>
                 {user.warnings && user.warnings.length > 0 ? (
                   <div className="warnings-list">
                     {user.warnings.map((warning, index) => {
@@ -446,7 +460,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                           <div className="warning-header">
                             {category && IconComponent && (
                               <span className="warning-category" style={{ backgroundColor: category.color }}>
-                                <IconComponent size={14} /> {category.label}
+                                <IconComponent size={14} /> {getCatLabel(category.value)}
                               </span>
                             )}
                             <span className="warning-date">{formatDate(warning.issuedAt)}</span>
@@ -454,7 +468,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                               className="remove-warning-btn"
                               onClick={() => handleRemoveWarning(index)}
                               disabled={loading}
-                              title="Usuń ostrzeżenie"
+                              title={t('admin.modRemoveWarning')}
                             >
                               <X size={14} />
                             </button>
@@ -462,11 +476,11 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                           <p className="warning-reason">{warning.reason}</p>
                           <div className="warning-footer">
                             <span className="warning-issuer">
-                              Wydane przez: {warning.issuedByUsername || warning.issuedBy}
+                              {t('admin.modIssuedBy')} {warning.issuedByUsername || warning.issuedBy}
                             </span>
                             {warning.expiresAt && (
                               <span className="warning-expires">
-                                Wygasa: {formatDate(warning.expiresAt)}
+                                {t('admin.modExpires')} {formatDate(warning.expiresAt)}
                               </span>
                             )}
                           </div>
@@ -475,7 +489,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                     })}
                   </div>
                 ) : (
-                  <p className="empty-state">Brak ostrzeżeń</p>
+                  <p className="empty-state">{t('admin.modNoWarnings')}</p>
                 )}
               </div>
             </div>
@@ -487,7 +501,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
               <div className="restrictions-section">
                 <h3>
                   <Shield size={20} />
-                  Zarządzaj ograniczeniami
+                  {t('admin.modManageRestrictions')}
                 </h3>
 
                 <div className="custom-checkboxes">
@@ -498,7 +512,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                       onChange={(e) => setRestrictions({ ...restrictions, canAddFriends: e.target.checked })}
                     />
                     <span className="checkbox-custom"></span>
-                    <span className="checkbox-label">Może dodawać znajomych</span>
+                    <span className="checkbox-label">{t('admin.modCanAddFriends')}</span>
                   </label>
 
                   <label className="custom-checkbox">
@@ -508,7 +522,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                       onChange={(e) => setRestrictions({ ...restrictions, canAcceptFriends: e.target.checked })}
                     />
                     <span className="checkbox-custom"></span>
-                    <span className="checkbox-label">Może akceptować zaproszenia</span>
+                    <span className="checkbox-label">{t('admin.modCanAcceptFriends')}</span>
                   </label>
 
                   <label className="custom-checkbox">
@@ -518,7 +532,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                       onChange={(e) => setRestrictions({ ...restrictions, canSendMessages: e.target.checked })}
                     />
                     <span className="checkbox-custom"></span>
-                    <span className="checkbox-label">Może wysyłać wiadomości</span>
+                    <span className="checkbox-label">{t('admin.modCanSendMessages')}</span>
                   </label>
 
                   <label className="custom-checkbox danger">
@@ -528,7 +542,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                       onChange={(e) => setRestrictions({ ...restrictions, isBanned: e.target.checked })}
                     />
                     <span className="checkbox-custom"></span>
-                    <span className="checkbox-label">Zbanowany (blokuje wszystko)</span>
+                    <span className="checkbox-label">{t('admin.modBannedLabel')}</span>
                   </label>
                 </div>
 
@@ -537,14 +551,14 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                   disabled={loading}
                   className="update-restrictions-btn-new"
                 >
-                  Zaktualizuj ograniczenia
+                  {t('admin.modUpdateRestrictions')}
                 </button>
               </div>
 
               {/* Active Restrictions */}
               {user.activeRestrictions && user.activeRestrictions.length > 0 && (
                 <div className="active-restrictions-section">
-                  <h3>Aktywne ograniczenia ({user.activeRestrictions.length})</h3>
+                  <h3>{t('admin.modActiveRestrictions', { count: user.activeRestrictions.length })}</h3>
                   <div className="restrictions-list">
                     {user.activeRestrictions.map((restriction, index) => (
                       <div key={index} className="restriction-item">
@@ -552,11 +566,11 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                         <p className="restriction-reason">{restriction.reason}</p>
                         <div className="restriction-footer">
                           <span className="restriction-issuer">
-                            Wydane przez: {restriction.issuedByUsername || restriction.issuedBy}
+                            {t('admin.modIssuedBy')} {restriction.issuedByUsername || restriction.issuedBy}
                           </span>
                           <span className="restriction-date">{formatDate(restriction.issuedAt)}</span>
                           {restriction.expiresAt && (
-                            <span className="restriction-expires">Wygasa: {formatDate(restriction.expiresAt)}</span>
+                            <span className="restriction-expires">{t('admin.modExpires')} {formatDate(restriction.expiresAt)}</span>
                           )}
                         </div>
                       </div>
@@ -574,25 +588,25 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 <div className="action-card">
                   <div className="action-card-header">
                     <Key size={20} />
-                    <h3>Reset hasła</h3>
+                    <h3>{t('admin.modResetPassword')}</h3>
                   </div>
                   {resetPassword ? (
                     <div className="password-reset-result">
                       <div className="password-display-new">
-                        <div className="password-label">Nowe hasło:</div>
+                        <div className="password-label">{t('admin.modNewPassword')}</div>
                         <div className="password-value">{resetPassword}</div>
                       </div>
                       <button onClick={copyPassword} className="copy-password-btn-new">
-                        Skopiuj hasło
+                        {t('admin.modCopyPassword')}
                       </button>
                       <p className="password-note-new">
-                        ⚠️ Przekaż to hasło użytkownikowi. Przy pierwszym logowaniu będzie musiał je zmienić.
+                        {t('admin.modPasswordNote')}
                       </p>
                     </div>
                   ) : (
                     <button onClick={handleResetPassword} disabled={loading} className="action-btn reset">
                       <Key size={16} />
-                      Resetuj hasło
+                      {t('admin.modDoReset')}
                     </button>
                   )}
                 </div>
@@ -600,14 +614,14 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 <div className="action-card danger">
                   <div className="action-card-header">
                     <Ban size={20} />
-                    <h3>Wyczyść wszystko</h3>
+                    <h3>{t('admin.modClearAll')}</h3>
                   </div>
                   <p className="action-description">
-                    Usuń wszystkie ostrzeżenia, ograniczenia i bany.
+                    {t('admin.modClearDesc')}
                   </p>
                   <button onClick={handleClearRestrictions} disabled={loading} className="action-btn danger">
                     <Ban size={16} />
-                    Wyczyść wszystkie ograniczenia
+                    {t('admin.modClearBtn')}
                   </button>
                 </div>
               </div>
@@ -619,9 +633,9 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
               <div className="badges-management-section">
                 <h3>
                   <Award size={20} />
-                  Zarządzaj odznakami
+                  {t('admin.modManageBadges')}
                 </h3>
-                <p className="badges-hint">Kliknij odznakę aby ją przyznać lub zabrać.</p>
+                <p className="badges-hint">{t('admin.modBadgesHint')}</p>
                 <div className="badges-grid">
                   {BADGE_DEFS.map(badge => {
                     const active = localBadges.includes(badge.id);
@@ -635,7 +649,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                         } as React.CSSProperties}
                         onClick={() => handleBadgeToggle(badge.id)}
                         disabled={badgesLoading}
-                        title={active ? `Zabierz odznakę ${badge.label}` : `Nadaj odznakę ${badge.label}`}
+                        title={active ? t('admin.badgeRevoke', { label: badge.label }) : t('admin.badgeGrant', { label: badge.label })}
                       >
                         <span className="badge-toggle-icon"><badge.Icon size={18} /></span>
                         <span className="badge-toggle-label">{badge.label}</span>
@@ -645,7 +659,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                   })}
                 </div>
                 {localBadges.length === 0 && (
-                  <p className="empty-state">Użytkownik nie ma żadnych odznak.</p>
+                  <p className="empty-state">{t('admin.modNoBadges')}</p>
                 )}
               </div>
             </div>

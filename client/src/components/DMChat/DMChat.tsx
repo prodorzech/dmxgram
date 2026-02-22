@@ -274,7 +274,7 @@ export const DMChat: React.FC = () => {
     // If still in an active cooldown, block sending
     if (spamCooldownRef.current && nowTs < spamCooldownRef.current) {
       const remaining = Math.ceil((spamCooldownRef.current - nowTs) / 1000);
-      toast(`⏳ Wysyłasz za szybko! Poczekaj ${remaining}s`, 'warning');
+      toast(t('user.spamWarning', { seconds: remaining }), 'warning');
       return;
     }
     // Purge timestamps older than 5 s
@@ -284,7 +284,7 @@ export const DMChat: React.FC = () => {
       const cooldownUntil = msgTimestampsRef.current[0] + 5000;
       spamCooldownRef.current = cooldownUntil;
       const remaining = Math.ceil((cooldownUntil - nowTs) / 1000);
-      toast(`⏳ Wysyłasz za szybko! Poczekaj ${remaining}s`, 'warning');
+      toast(t('user.spamWarning', { seconds: remaining }), 'warning');
       return;
     }
     msgTimestampsRef.current.push(nowTs);

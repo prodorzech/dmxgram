@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, MessageCircle, Flag } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Friend } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
 import { UserBadges } from '../UserBadges/UserBadges';
@@ -18,6 +19,7 @@ interface UserProfileModalProps {
 export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfileModalProps) {
   const { user, token } = useStore();
   const { toast } = useUI();
+  const { t } = useTranslation();
   const [showReport, setShowReport] = useState(false);
 
   const handleReportSubmit = async (category: string, reason: string) => {
@@ -33,11 +35,11 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
         category,
         reason,
       }, token);
-      toast('Zgłoszenie zostało wysłane', 'success');
+      toast(t('report.success'), 'success');
       setShowReport(false);
       onClose();
     } catch {
-      toast('Nie udało się wysłać zgłoszenia', 'error');
+      toast(t('report.error'), 'error');
     }
   };
   const getStatusColor = () => {
@@ -109,7 +111,7 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
               {user && user.id !== friend.id && (
                 <button className="action-button danger" onClick={() => setShowReport(true)}>
                   <Flag size={18} />
-                  Zgłoś użytkownika
+                  {t('user.reportUser')}
                 </button>
               )}
             </div>

@@ -99,7 +99,7 @@
 .friend-item.active {
   background: rgba(40, 26, 26, 0.6);
   transform: none;
-  box-shadow: 0 0 0 1.5px var(--accent-primary), 0 0 16px 3px rgba(220, 38, 38, 0.35);
+  box-shadow: 0 0 0 1.5px var(--accent-primary), 0 0 16px 3px var(--accent-shadow);
 }
 
 .friend-avatar {

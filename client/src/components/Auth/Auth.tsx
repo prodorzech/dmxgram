@@ -58,10 +58,6 @@ export function Auth() {
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      if (err.message === 'errEmailNotVerified' && err.email) {
-        setPendingEmail(err.email);
-        return;
-      }
       setError(translateError(err.message || 'An error occurred'));
     } finally {
       setLoading(false);

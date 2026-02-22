@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { Auth } from './components/Auth/Auth';
 import { Dashboard } from './pages/Dashboard/Dashboard';
@@ -12,6 +12,15 @@ import './styles/globals.css';
 function App() {
   const { isAuthenticated, token, setUser, setFriends, theme, logout } = useStore();
   const [loading, setLoading] = useState(true);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const finishLoading = () => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -20,14 +29,15 @@ function App() {
   useEffect(() => {
     if (isAuthenticated && token) {
       setLoading(true);
-      
-      // Set timeout to prevent infinite loading
-      const loadingTimeout = setTimeout(() => {
+
+      // Safety timeout — if loading takes > 8s, give up and show auth
+      loadingTimeoutRef.current = setTimeout(() => {
         console.error('Loading timeout - forcing logout');
         logout();
         setLoading(false);
-      }, 10000); // 10 seconds timeout
-      
+        loadingTimeoutRef.current = null;
+      }, 8000);
+
       // Fetch user data
       Promise.all([
         api.getMe(token).then(setUser).catch(err => {
@@ -40,66 +50,64 @@ function App() {
         })
       ])
         .then(() => {
-          // Connect socket
-          socketService.connect(token);
+          // Connect socket — wrapped so a socket error doesn't block loading
+          try {
+            socketService.connect(token);
 
-          // When admin updates this user's restrictions/warnings, refresh state
-          socketService.on('user:updated', (updatedUser: any) => {
-            if (updatedUser) setUser(updatedUser);
-          });
-
-          // Desktop notifications
-          socketService.on('dm:new', (dm: any) => {
-            const notifEnabled = localStorage.getItem('dmx-desktop-notifications') !== 'false';
-            if (!notifEnabled) return;
-            const state = useStore.getState();
-            if (dm.senderId === state.user?.id) return; // own message
-            // Suppress only when actively viewing that chat with focus
-            if (state.currentFriend?.id === dm.senderId && document.hasFocus()) return;
-            const raw: string = dm.content ?? '';
-            let preview = raw;
-            try {
-              const parsed = JSON.parse(raw);
-              preview = parsed.text || (parsed.attachments?.length ? '\uD83D\uDCCE Attachment' : raw);
-            } catch { /* not JSON */ }
-            if (!preview.trim()) return;
-            window.electronAPI?.showNotification({
-              title: dm.senderUsername,
-              body: preview.length > 80 ? preview.substring(0, 80) + '\u2026' : preview,
+            socketService.on('user:updated', (updatedUser: any) => {
+              if (updatedUser) setUser(updatedUser);
             });
-          });
 
-          socketService.on('friend:request', (request: any) => {
-            const notifEnabled = localStorage.getItem('dmx-desktop-notifications') !== 'false';
-            if (!notifEnabled) return;
-            window.electronAPI?.showNotification({
-              title: 'DMXGram',
-              body: i18n.t('user.notifFriendRequest', { username: request.senderUsername }),
+            socketService.on('dm:new', (dm: any) => {
+              const notifEnabled = localStorage.getItem('dmx-desktop-notifications') !== 'false';
+              if (!notifEnabled) return;
+              const state = useStore.getState();
+              if (dm.senderId === state.user?.id) return;
+              if (state.currentFriend?.id === dm.senderId && document.hasFocus()) return;
+              const raw: string = dm.content ?? '';
+              let preview = raw;
+              try {
+                const parsed = JSON.parse(raw);
+                preview = parsed.text || (parsed.attachments?.length ? '\uD83D\uDCCE Attachment' : raw);
+              } catch { /* not JSON */ }
+              if (!preview.trim()) return;
+              window.electronAPI?.showNotification({
+                title: dm.senderUsername,
+                body: preview.length > 80 ? preview.substring(0, 80) + '\u2026' : preview,
+              });
             });
-          });
 
-          // Add a small delay for smooth transition
-          setTimeout(() => {
-            clearTimeout(loadingTimeout);
-            setLoading(false);
-          }, 500);
+            socketService.on('friend:request', (request: any) => {
+              const notifEnabled = localStorage.getItem('dmx-desktop-notifications') !== 'false';
+              if (!notifEnabled) return;
+              window.electronAPI?.showNotification({
+                title: 'DMXGram',
+                body: i18n.t('user.notifFriendRequest', { username: request.senderUsername }),
+              });
+            });
+          } catch (socketErr) {
+            console.error('Socket connect error (non-fatal):', socketErr);
+          }
+
+          // Short delay for smooth transition, then always resolve loading
+          setTimeout(() => finishLoading(), 400);
         })
         .catch((error) => {
           console.error('App initialization error:', error);
-          clearTimeout(loadingTimeout);
           logout();
-          setLoading(false);
+          finishLoading();
         });
 
       return () => {
-        clearTimeout(loadingTimeout);
         socketService.off('user:updated');
         socketService.off('dm:new');
         socketService.off('friend:request');
         socketService.disconnect();
+        // NOTE: intentionally NOT clearing loadingTimeoutRef here,
+        // so the safety timeout always fires even if the effect re-runs.
       };
     } else {
-      setLoading(false);
+      finishLoading();
     }
   }, [isAuthenticated, token]);
 

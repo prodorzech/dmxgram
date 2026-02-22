@@ -36,21 +36,22 @@ export function Dashboard() {
   useEffect(() => {
     const accent = localStorage.getItem('dmx-accent-color');
     if (accent) {
-      // Find matching hover colour
-      const ACCENT_MAP: Record<string, { hover: string }> = {
-        '#dc2626': { hover: '#b91c1c' },
-        '#ec4899': { hover: '#db2777' },
-        '#3b82f6': { hover: '#2563eb' },
-        '#22c55e': { hover: '#16a34a' },
-        '#f97316': { hover: '#ea580c' },
-        '#eab308': { hover: '#ca8a04' },
-        '#a855f7': { hover: '#9333ea' },
+      // Find matching hover/shadow colour
+      const ACCENT_MAP: Record<string, { hover: string; shadow: string }> = {
+        '#dc2626': { hover: '#b91c1c', shadow: 'rgba(220,38,38,0.35)'  },
+        '#ec4899': { hover: '#db2777', shadow: 'rgba(236,72,153,0.35)' },
+        '#3b82f6': { hover: '#2563eb', shadow: 'rgba(59,130,246,0.35)' },
+        '#22c55e': { hover: '#16a34a', shadow: 'rgba(34,197,94,0.35)'  },
+        '#f97316': { hover: '#ea580c', shadow: 'rgba(249,115,22,0.35)' },
+        '#eab308': { hover: '#ca8a04', shadow: 'rgba(234,179,8,0.35)'  },
+        '#a855f7': { hover: '#9333ea', shadow: 'rgba(168,85,247,0.35)' },
       };
       const meta = ACCENT_MAP[accent];
       document.documentElement.style.setProperty('--accent-primary', accent);
       if (meta) {
-        document.documentElement.style.setProperty('--accent-hover',  meta.hover);
-        document.documentElement.style.setProperty('--accent-active', meta.hover);
+        document.documentElement.style.setProperty('--accent-hover',   meta.hover);
+        document.documentElement.style.setProperty('--accent-active',  meta.hover);
+        document.documentElement.style.setProperty('--accent-shadow',  meta.shadow);
       }
     }
   }, []);

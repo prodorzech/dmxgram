@@ -41,11 +41,11 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, badges,
         category,
         reason,
       }, token);
-      toast('Zgłoszenie zostało wysłane', 'success');
+      toast(t('report.success'), 'success');
       setShowReport(false);
       onClose();
     } catch {
-      toast('Nie udało się wysłać zgłoszenia', 'error');
+      toast(t('report.error'), 'error');
     }
   };
 
@@ -139,7 +139,7 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, badges,
             <div className="popover-report-section">
               <button className="popover-report-btn" onClick={() => setShowReport(true)}>
                 <Flag size={13} />
-                Zgłoś użytkownika
+                {t('user.reportUser')}
               </button>
             </div>
           )}

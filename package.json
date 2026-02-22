@@ -1,6 +1,6 @@
 {
   "name": "dmx-chat",
-  "version": "1.9.0",
+  "version": "1.9.6",
   "description": "Full-stack chat application like Discord",
   "main": "electron/main.js",
   "scripts": {
@@ -93,6 +93,7 @@
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+    "resend": "^6.9.2",
     "socket.io": "^4.8.3",
     "uuid": "^9.0.1"
   }

@@ -176,7 +176,9 @@ export class Database {
   // ── Users ──────────────────────────────────────────────────────────────────
 
   async createUser(user: User): Promise<User> {
-    const { error } = await getSupabase().from('users').insert({
+    // Build the insert row — exclude optional email-verification columns
+    // that may not exist in older DB schemas
+    const insertRow: Record<string, any> = {
       id: user.id,
       username: user.username,
       email: user.email,
@@ -196,10 +198,12 @@ export class Database {
       warnings: user.warnings || [],
       active_restrictions: user.activeRestrictions || [],
       badges: user.badges || [],
-      email_verified: user.emailVerified ?? false,
-      email_verification_code: user.emailVerificationCode ?? null,
-      email_verification_expires: user.emailVerificationExpires?.toISOString() ?? null,
-    });
+    };
+    // Include email_verified only if the field is explicitly set
+    if (user.emailVerified !== undefined) {
+      insertRow.email_verified = user.emailVerified;
+    }
+    const { error } = await getSupabase().from('users').insert(insertRow);
     if (error) throw error;
     return user;
   }

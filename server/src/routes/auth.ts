@@ -11,6 +11,15 @@ import { getIO } from '../socket';
 
 const router: Router = express.Router();
 
+// In-memory store for pending email verifications (avoids need for DB columns)
+const pendingVerifications = new Map<string, {
+  code: string;
+  username: string;
+  email: string;
+  hashedPassword: string;
+  expires: number;
+}>();
+
 // Helper function to serialize user data for responses
 const serializeUser = (user: User) => ({
   id: user.id,
@@ -58,38 +67,93 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user: User = {
-      id: uuidv4(),
+    // Store pending verification in memory and send code by email
+    const code = generateVerificationCode();
+    pendingVerifications.set(email, {
+      code,
       username,
       email,
-      password: hashedPassword,
+      hashedPassword,
+      expires: Date.now() + 15 * 60 * 1000 // 15 min
+    });
+
+    try {
+      await sendVerificationEmail(email, username, code);
+    } catch (emailErr) {
+      pendingVerifications.delete(email);
+      console.error('Email send error:', emailErr);
+      return res.status(500).json({ error: 'Failed to send verification email' });
+    }
+
+    res.status(200).json({ needsVerification: true, email });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Verify email
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+
+    const pending = pendingVerifications.get(email);
+    if (!pending) return res.status(400).json({ error: 'errInvalidCode' });
+    if (Date.now() > pending.expires) {
+      pendingVerifications.delete(email);
+      return res.status(400).json({ error: 'errCodeExpired' });
+    }
+    if (pending.code !== code) return res.status(400).json({ error: 'errInvalidCode' });
+
+    // Create the user now that the email is verified
+    const user: User = {
+      id: uuidv4(),
+      username: pending.username,
+      email: pending.email,
+      password: pending.hashedPassword,
       createdAt: new Date(),
-      status: 'offline'
+      status: 'offline',
+      emailVerified: true
     };
 
     await db.createUser(user);
+    pendingVerifications.delete(email);
 
-    // Add user to default server (best-effort – server may not exist)
-    try {
-      await db.addServerMember('default-server', user.id);
-    } catch (_) { /* default-server not present, skip */ }
+    try { await db.addServerMember('default-server', user.id); } catch (_) {}
 
-    // Generate token
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
     );
 
-    const response: AuthResponse = {
-      token,
-      user: serializeUser(user)
-    };
-
-    res.status(201).json(response);
+    res.json({ token, user: serializeUser(user) });
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('Verify email error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Resend verification code
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const pending = pendingVerifications.get(email);
+    if (!pending) return res.status(400).json({ error: 'No pending verification for this email' });
+
+    const code = generateVerificationCode();
+    pending.code = code;
+    pending.expires = Date.now() + 15 * 60 * 1000;
+    pendingVerifications.set(email, pending);
+
+    await sendVerificationEmail(email, pending.username, code);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
@@ -113,10 +177,6 @@ router.post('/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
-    }
-    // Block login if email not verified
-    if (!user.emailVerified) {
-      return res.status(403).json({ error: 'errEmailNotVerified', email: user.email });
     }
     // Update last login IP and language from Accept-Language header
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 
