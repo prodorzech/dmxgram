@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '../../utils/imageUrl';
+import { UserBadges } from '../UserBadges/UserBadges';
 import './UserInfoPopover.css';
 
 interface UserInfoPopoverProps {
@@ -10,11 +11,12 @@ interface UserInfoPopoverProps {
   avatar?: string;
   bio?: string;
   status: 'online' | 'offline' | 'away';
+  badges?: string[];
   onClose: () => void;
   position: { x: number; y: number };
 }
 
-export function UserInfoPopover({ userId, username, avatar, bio, status, onClose, position }: UserInfoPopoverProps) {
+export function UserInfoPopover({ userId, username, avatar, bio, status, badges, onClose, position }: UserInfoPopoverProps) {
   const { t } = useTranslation();
   const [idExpanded, setIdExpanded] = useState(false);
   const [copied,     setCopied]     = useState(false);
@@ -67,7 +69,10 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, onClose
         </div>
 
         <div className="popover-info">
-          <h3 className="popover-username">{username}</h3>
+          <div className="popover-username-row">
+            <h3 className="popover-username">{username}</h3>
+            {badges && badges.length > 0 && <UserBadges badges={badges} size="sm" />}
+          </div>
 
           <div className="popover-status">
             <span className="status-dot" style={{ backgroundColor: getStatusColor() }} />

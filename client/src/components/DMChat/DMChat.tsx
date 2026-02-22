@@ -35,7 +35,7 @@ export const DMChat: React.FC = () => {
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
   const [popoverUser, setPopoverUser] = useState<{
     userId: string; username: string; avatar?: string; bio?: string;
-    status: 'online' | 'offline' | 'away';
+    status: 'online' | 'offline' | 'away'; badges?: string[];
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -348,13 +348,13 @@ export const DMChat: React.FC = () => {
   };
 
   const handleAvatarClick = (event: React.MouseEvent, userId: string, username: string,
-    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away') => {
+    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away', badges?: string[]) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const POPOVER_W = 290;
     const POPOVER_H = bio ? 320 : 240;
     const x = Math.min(rect.left + rect.width + 10, window.innerWidth - POPOVER_W - 10);
     const y = Math.min(rect.top, window.innerHeight - POPOVER_H - 10);
-    setPopoverUser({ userId, username, avatar, bio, status: status || 'offline' });
+    setPopoverUser({ userId, username, avatar, bio, status: status || 'offline', badges });
     setPopoverPosition({ x: Math.max(4, x), y: Math.max(4, y) });
     setShowUserPopover(true);
   };
@@ -568,6 +568,7 @@ export const DMChat: React.FC = () => {
               const senderAvatar = isOwn ? user?.avatar : dm.senderAvatar;
               const senderBio = isOwn ? user?.bio : dm.senderBio;
               const senderStatus: 'online' | 'offline' | 'away' = isOwn ? (user?.status as any || 'online') : (currentFriend?.status || 'offline');
+              const senderBadges = isOwn ? user?.badges : currentFriend?.badges;
 
               return (
                 <div
@@ -577,7 +578,7 @@ export const DMChat: React.FC = () => {
                 >
                   {showAvatar ? (
                     <div className="message-avatar clickable"
-                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus)}
+                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges)}
                       title={t('chat.clickToSeeUserInfo')}>
                       {senderAvatar ? (
                         <img src={getImageUrl(senderAvatar)} alt={senderUsername} />
@@ -592,7 +593,7 @@ export const DMChat: React.FC = () => {
                     {showAvatar && (
                       <div className="message-header">
                         <span className={`message-username${isOwn ? ' own-name' : ''} clickable`}
-                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus)}
+                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges)}
                           title={t('chat.clickToSeeUserInfo')}>
                           {senderUsername}
                         </span>
@@ -849,6 +850,7 @@ export const DMChat: React.FC = () => {
         {showUserPopover && popoverUser && (
           <UserInfoPopover userId={popoverUser.userId} username={popoverUser.username}
             avatar={popoverUser.avatar} bio={popoverUser.bio} status={popoverUser.status}
+            badges={popoverUser.badges}
             position={popoverPosition} onClose={() => setShowUserPopover(false)} />
         )}
 

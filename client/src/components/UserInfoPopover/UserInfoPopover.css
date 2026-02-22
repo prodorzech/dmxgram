@@ -91,6 +91,15 @@
   gap: 12px;
 }
 
+.popover-username-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
 .popover-username {
   font-size: 20px;
   font-weight: 700;

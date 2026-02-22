@@ -73,10 +73,12 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
 
       {/* User Info */}
       <div className="profile-sidebar-content">
-        <div className="profile-sidebar-username">{friend.username}</div>
-        {friend.badges && friend.badges.length > 0 && (
-          <div className="profile-sidebar-badges"><UserBadges badges={friend.badges} size="md" /></div>
-        )}
+        <div className="profile-sidebar-username-row">
+          <span className="profile-sidebar-username">{friend.username}</span>
+          {friend.badges && friend.badges.length > 0 && (
+            <UserBadges badges={friend.badges} size="md" />
+          )}
+        </div>
         <div className="profile-sidebar-status-text">{getStatusText(friend.status)}</div>
 
         <div className="profile-sidebar-divider" />
