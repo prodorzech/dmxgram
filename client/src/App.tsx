@@ -54,6 +54,7 @@ function App() {
             if (!notifEnabled) return;
             const state = useStore.getState();
             if (dm.senderId === state.user?.id) return; // own message
+            // Suppress only when actively viewing that chat with focus
             if (state.currentFriend?.id === dm.senderId && document.hasFocus()) return;
             const raw: string = dm.content ?? '';
             let preview = raw;
@@ -61,6 +62,7 @@ function App() {
               const parsed = JSON.parse(raw);
               preview = parsed.text || (parsed.attachments?.length ? '\uD83D\uDCCE Attachment' : raw);
             } catch { /* not JSON */ }
+            if (!preview.trim()) return;
             window.electronAPI?.showNotification({
               title: dm.senderUsername,
               body: preview.length > 80 ? preview.substring(0, 80) + '\u2026' : preview,

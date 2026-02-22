@@ -203,16 +203,17 @@ function initAutoUpdater() {
 // ── Desktop notifications ────────────────────────────────────────────────
 ipcMain.on('show-notification', (_, { title, body }) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (mainWindow.isFocused() && !mainWindow.isMinimized()) return;
   if (!Notification.isSupported()) return;
   const n = new Notification({
     title,
     body,
     icon: path.join(__dirname, '..', 'client', 'public', 'logo.png'),
+    silent: false,
   });
   n.on('click', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
       mainWindow.focus();
     }
   });
