@@ -45,7 +45,8 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthRequest, r
       language: user.language,
       restrictions: user.restrictions,
       warnings: user.warnings,
-      activeRestrictions: user.activeRestrictions
+      activeRestrictions: user.activeRestrictions,
+      badges: user.badges || []
     }));
     
     res.json(sanitizedUsers);
@@ -71,6 +72,28 @@ router.post('/users/:userId/restrictions', authMiddleware, adminMiddleware, asyn
     res.json({ success: true, user: updated });
   } catch (error) {
     console.error('Set restrictions error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Update user badges (admin only)
+router.patch('/users/:userId/badges', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { userId } = req.params;
+    const { badges } = req.body as { badges: string[] };
+
+    const VALID_BADGES = ['ceo', 'staff', 'og', 'popular', 'media', 'bug_hunter', 'moderator'];
+    const filtered = (badges || []).filter(b => VALID_BADGES.includes(b));
+
+    const user = await db.getUserById(userId);
+    if (!user) return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
+
+    await db.updateUser(userId, { badges: filtered });
+    const updated = await db.getUserById(userId);
+    emitUserUpdated(userId, updated);
+    res.json({ success: true, badges: filtered });
+  } catch (error) {
+    console.error('Update badges error:', error);
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
@@ -240,6 +263,47 @@ router.post('/users/:userId/reset-password', authMiddleware, adminMiddleware, as
     });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Get all reports (admin only)
+router.get('/reports', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const reports = await db.getAllReports();
+    res.json(reports);
+  } catch (error) {
+    console.error('Get reports error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Update report status (admin only)
+router.patch('/reports/:reportId/status', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status } = req.body as { status: 'pending' | 'reviewed' };
+    await db.updateReportStatus(reportId, status);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update report status error:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Get conversation for a report — last 50 DMs between senderId and receiverId (admin only)
+router.get('/reports/:reportId/conversation', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { reportId } = req.params;
+    const reports = await db.getAllReports();
+    const report = reports.find(r => r.id === reportId);
+    if (!report) {
+      return res.status(404).json({ error: 'Zgłoszenie nie znalezione' });
+    }
+    const messages = await db.getDirectMessages(report.senderId, report.receiverId, 50);
+    res.json(messages);
+  } catch (error) {
+    console.error('Get report conversation error:', error);
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });

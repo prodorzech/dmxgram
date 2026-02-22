@@ -24,7 +24,8 @@
   },
   "dashboard": {
     "nothingSelected": "Ninguna conversación seleccionada",
-    "selectFriend": "Selecciona un amigo para chatear"
+    "selectFriend": "Selecciona un amigo para chatear",
+    "closeAdminPanel": "Cerrar panel de administración"
   },
   "friends": {
     "title": "Amigos",
@@ -47,7 +48,22 @@
     "viewProfile": "Ver perfil",
     "add": "Agregar",
     "addFriendByUsername": "Agregar amigo por nombre de usuario",
-    "sendInvitation": "Enviar invitación"
+    "sendInvitation": "Enviar invitación",
+    "remove": "Eliminar de amigos",
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a {{username}} de tus amigos?",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "blocked": "Bloqueado",
+    "noBlocked": "Sin usuarios bloqueados",
+    "confirmBlock": "¿Estás seguro de que quieres bloquear a {{username}}? No podrán añadirse como amigos ni enviarse mensajes.",
+    "confirmUnblock": "¿Estás seguro de que quieres desbloquear a {{username}}?",
+    "blockedToast": "{{username}} ha sido bloqueado",
+    "unblockedToast": "{{username}} ha sido desbloqueado",
+    "errRequestExists": "Solicitud de amistad ya enviada",
+    "errAlreadyFriends": "Ya son amigos",
+    "errUserNotFound": "Usuario no encontrado",
+    "errBlocked": "No puedes enviar solicitudes a este usuario",
+    "errSelfAdd": "No puedes agregarte a ti mismo"
   },
   "chat": {
     "typeMessage": "Mensaje a @{{username}}",
@@ -56,7 +72,17 @@
     "typing": "{{username}} está escribiendo...",
     "sendMessage": "Enviar mensaje",
     "clickToSeeProfile": "Haz clic para ver el perfil",
-    "clickToSeeUserInfo": "Haz clic para ver información del usuario"
+    "clickToSeeUserInfo": "Haz clic para ver información del usuario",
+    "clearChat": "Borrar chat",
+    "clearChatTitle": "Borrar conversación",
+    "clearChatDesc": "Esto eliminará permanentemente todos los mensajes de esta conversación para ambos usuarios. Escribe \"Borrar\" para confirmar.",
+    "clearChatWord": "Borrar",
+    "clearChatConfirmBtn": "Borrar conversación",
+    "clearChatSuccess": "Conversación borrada",
+    "youBlockedUser": "Has bloqueado a {{username}}. Desbloquéalo para enviar mensajes.",
+    "copy": "Copiar texto",
+    "copied": "¡Copiado!",
+    "moreReactions": "Más reacciones"
   },
   "user": {
     "settings": "Configuración de usuario",
@@ -102,7 +128,19 @@
     "issuedAt": "Emitido el",
     "expiresAt": "Expira el",
     "duration": "Duración",
-    "permanent": "Permanente"
+    "permanent": "Permanente",
+    "notifications": "Notificaciones",
+    "notificationVolume": "Volumen de notificaciones",
+    "notificationVolumeHint": "Nivel de volumen para nuevos mensajes (0 = silenciado)",
+    "testSound": "Probar sonido",
+    "appearance": "Apariencia",
+    "bgBlur": "Desenfoque de fondo",
+    "bgBlurHint": "Nivel de desenfoque del fondo (0 = sin desenfoque)",
+    "desktopNotifications": "Notificaciones de escritorio",
+    "desktopNotificationsHint": "Mostrar notificaciones de Windows para mensajes y solicitudes de amistad cuando la app está en segundo plano",
+    "notifFriendRequest": "{{username}} te ha enviado una solicitud de amistad",
+    "notifEnabled": "Activado",
+    "notifDisabled": "Desactivado"
   },
   "profile": {
     "sendMessage": "Enviar mensaje",
@@ -124,7 +162,8 @@
     "objects": "Objetos",
     "symbols": "Símbolos",
     "noEmoji": "Emoji no encontrado",
-    "noRecent": "No hay recientes"
+    "noRecent": "No hay recientes",
+    "searchResults": "Resultados de búsqueda"
   },
   "upload": {
     "avatarHint": "JPG, PNG, GIF, WEBP (máx 5MB)",
@@ -142,9 +181,93 @@
     "sendRequest": "No se pudo enviar la solicitud",
     "network": "Error de red. Por favor verifica tu conexión."
   },
+  "update": {
+    "available": "Actualización disponible",
+    "version": "La versión {{version}} está lista para descargar",
+    "mandatory": "Esta actualización es necesaria para continuar usando DMXGram.",
+    "download": "Descargar actualización",
+    "downloading": "Descargando actualización...",
+    "progress": "{{percent}}%",
+    "readyToInstall": "Actualización descargada",
+    "restart": "Reiniciar e instalar",
+    "copyId": "Copiar ID",
+    "copied": "¡Copiado!"
+  },
+  "report": {
+    "title": "Reportar mensaje",
+    "subtitle": "Reportando un mensaje de {{username}}",
+    "category": "Categoría",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Describe por qué reportas este mensaje (mín. 10 caracteres)...",
+    "reasonTooShort": "El motivo debe tener al menos 10 caracteres.",
+    "submit": "Enviar reporte",
+    "submitting": "Enviando...",
+    "catSpam": "Spam",
+    "catHarassment": "Acoso",
+    "catInappropriate": "Contenido inapropiado",
+    "catMisinformation": "Desinformación",
+    "catOther": "Otro",
+    "success": "Mensaje reportado. Nuestro equipo lo revisará.",
+    "error": "No se pudo enviar el reporte.",
+    "replyTo": "Responder a",
+    "noPing": "Sin ping (responder sin notificación)",
+    "cancelReply": "Cancelar respuesta"
+  },
+  "admin": {
+    "title": "Panel de administración",
+    "administrator": "Administrador",
+    "totalUsers": "Usuarios",
+    "online": "En línea",
+    "admins": "Admins",
+    "newReports": "Nuevos reportes",
+    "users": "Usuarios",
+    "reports": "Reportes",
+    "usersList": "Lista de usuarios",
+    "reportsList": "Reportes de mensajes",
+    "loadingUsers": "Cargando usuarios...",
+    "loadingReports": "Cargando reportes...",
+    "noReports": "Sin reportes",
+    "pending": "Pendiente",
+    "reviewed": "Revisado",
+    "reportedWord": "reportó",
+    "messageFrom": "mensaje de",
+    "viewConv": "Últimos 50 mensajes",
+    "markPending": "Marcar como pendiente",
+    "markReviewed": "Marcar como revisado",
+    "moderate": "Moderar",
+    "accessDeniedTitle": "Acceso denegado",
+    "accessDeniedMsg": "Solo los administradores tienen acceso a este panel",
+    "conversation": "Conversación",
+    "reportedMessage": "Mensaje reportado",
+    "noMessages": "Sin mensajes",
+    "category": "Categoría",
+    "reason": "Razón",
+    "reportedBadge": "Reportado",
+    "colAvatar": "Avatar",
+    "colUsername": "Nombre de usuario",
+    "colEmail": "Correo",
+    "colId": "ID",
+    "colStatus": "Estado",
+    "colRole": "Rol",
+    "colCreated": "Creado",
+    "colActions": "Acciones",
+    "banned": "Baneado",
+    "roleAdmin": "Admin",
+    "roleUser": "Usuario",
+    "moderateBtn": "Moderar",
+    "loadingConversation": "Cargando conversación...",
+    "markedReviewed": "Reporte marcado como revisado.",
+    "markedPending": "Reporte marcado como pendiente.",
+    "failedUpdateReport": "Error al actualizar el estado del reporte.",
+    "failedLoadConversation": "Error al cargar la conversación."
+  },
   "status": {
     "online": "En línea",
     "offline": "Desconectado",
     "away": "Vuelvo enseguida"
+  },
+  "dialog": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
   }
 }

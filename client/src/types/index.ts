@@ -33,6 +33,7 @@ export interface User {
   restrictions?: UserRestrictions;
   warnings?: UserRestriction[];
   activeRestrictions?: UserRestriction[];
+  badges?: string[];
 }
 
 export interface Server {
@@ -54,6 +55,13 @@ export interface Channel {
   type: 'text' | 'voice';
   description?: string;
   createdAt: Date;
+}
+
+export interface MessageAttachment {
+  url: string;
+  filename: string;
+  mimetype: string;
+  size: number;
 }
 
 export interface Message {
@@ -81,6 +89,7 @@ export interface DirectMessage {
   read: boolean;
   edited?: boolean;
   editedAt?: Date;
+  reactions?: { emoji: string; userIds: string[] }[];
 }
 
 export interface FriendRequest {
@@ -98,6 +107,7 @@ export interface Friend {
   avatar?: string;
   bio?: string;
   status: 'online' | 'offline' | 'away';
+  badges?: string[];
 }
 
 export interface AuthResponse {

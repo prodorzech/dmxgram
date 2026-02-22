@@ -50,13 +50,19 @@ export const initializeSocket = (httpServer: HTTPServer) => {
 
     // Save session
     db.setUserSession(socket.id, userId);
-    db.updateUserStatus(userId, 'online');
+
+    // Restore preferred status from DB (fallback to 'online')
+    const userForStatus = await db.getUserById(userId);
+    const preferredStatus: 'online' | 'offline' | 'away' =
+      (userForStatus?.status === 'away') ? 'away' : 'online';
+    db.updateUserStatus(userId, preferredStatus);
 
     // Join personal room for notifications (friend requests, etc.)
     socket.join(`user:${userId}`);
 
-    // Notify others about user status
-    socket.broadcast.emit('user:status', { userId, status: 'online' });
+    // Notify others AND the connecting socket itself about restored status
+    socket.broadcast.emit('user:status', { userId, status: preferredStatus });
+    socket.emit('user:status', { userId, status: preferredStatus });
 
     // Join server rooms
     const userServers = await db.getUserServers(userId);
@@ -169,6 +175,12 @@ export const initializeSocket = (httpServer: HTTPServer) => {
           return;
         }
 
+        // Check if either user has blocked the other
+        if (await db.isAnyBlockBetween(userId, data.friendId)) {
+          socket.emit('error', { message: 'Nie możesz wysyłać wiadomości temu użytkownikowi' });
+          return;
+        }
+
         const dm: DirectMessage = {
           id: uuidv4(),
           senderId: userId,
@@ -184,9 +196,11 @@ export const initializeSocket = (httpServer: HTTPServer) => {
 
         await db.addDirectMessage(dm);
 
-        // Send to both users
-        const roomId = [userId, data.friendId].sort().join(':');
-        io.to(`dm:${roomId}`).emit('dm:new', dm);
+        // Deliver to sender (this socket) and directly to receiver's personal room.
+        // Using personal rooms guarantees delivery even if the receiver hasn't
+        // opened the conversation (and therefore never emitted dm:join).
+        socket.emit('dm:new', dm);
+        socket.to(`user:${data.friendId}`).emit('dm:new', dm);
       } catch (error) {
         console.error('DM send error:', error);
         socket.emit('error', { message: 'Błąd wysyłania wiadomości' });
@@ -216,8 +230,8 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       try {
         const updated = await db.editDirectMessage(userId, data.friendId, data.messageId, data.content);
         if (!updated) return;
-        const roomId = [userId, data.friendId].sort().join(':');
-        io.to(`dm:${roomId}`).emit('dm:edited', updated);
+        socket.emit('dm:edited', updated);
+        socket.to(`user:${data.friendId}`).emit('dm:edited', updated);
       } catch (error) {
         console.error('DM edit error:', error);
         socket.emit('error', { message: 'Failed to edit message' });
@@ -228,11 +242,45 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.on('dm:delete', async (data: { friendId: string; messageId: string }) => {
       try {
         await db.deleteDirectMessage(userId, data.friendId, data.messageId);
-        const roomId = [userId, data.friendId].sort().join(':');
-        io.to(`dm:${roomId}`).emit('dm:deleted', { messageId: data.messageId });
+        socket.emit('dm:deleted', { messageId: data.messageId });
+        socket.to(`user:${data.friendId}`).emit('dm:deleted', { messageId: data.messageId });
       } catch (error) {
         console.error('DM delete error:', error);
         socket.emit('error', { message: 'Failed to delete message' });
+      }
+    });
+
+    // Toggle emoji reaction on a DM
+    socket.on('dm:react', async (data: { friendId: string; messageId: string; emoji: string }) => {
+      try {
+        const reactions = await db.getMessageReactions(data.messageId);
+        const alreadyReacted = (reactions.find(r => r.emoji === data.emoji)?.userIds ?? []).includes(userId);
+        if (alreadyReacted) await db.removeReaction(data.messageId, userId, data.emoji);
+        else await db.addReaction(data.messageId, userId, data.emoji);
+        const updatedReactions = await db.getMessageReactions(data.messageId);
+        db.setReactionMemory(data.messageId, updatedReactions); // sync to memory as well
+        const payload = { messageId: data.messageId, reactions: updatedReactions };
+        socket.emit('dm:reactions:update', payload);
+        socket.to(`user:${data.friendId}`).emit('dm:reactions:update', payload);
+      } catch (error) {
+        // DB table doesn't exist yet — use in-memory fallback
+        console.warn('dm:react DB fallback (create message_reactions table in Supabase):', (error as any)?.message);
+        const updatedReactions = db.toggleReactionInMemory(data.messageId, userId, data.emoji);
+        const payload = { messageId: data.messageId, reactions: updatedReactions };
+        socket.emit('dm:reactions:update', payload);
+        socket.to(`user:${data.friendId}`).emit('dm:reactions:update', payload);
+      }
+    });
+
+    // Clear all DMs between two users (both sides)
+    socket.on('dm:clear', async (data: { friendId: string }) => {
+      try {
+        await db.clearDirectMessages(userId, data.friendId);
+        socket.emit('dm:cleared', { friendId: data.friendId });
+        socket.to(`user:${data.friendId}`).emit('dm:cleared', { friendId: userId });
+      } catch (error) {
+        console.error('DM clear error:', error);
+        socket.emit('error', { message: 'Failed to clear chat' });
       }
     });
 

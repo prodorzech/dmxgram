@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { X, AlertTriangle, Shield, Ban, Key, Info, Clock, User as UserIcon, Megaphone, UserX, XOctagon, MessageSquareWarning, Users2, FileText } from 'lucide-react';
+import { X, AlertTriangle, Shield, Ban, Key, Info, Clock, User as UserIcon, Megaphone, UserX, XOctagon, MessageSquareWarning, Users2, FileText, Award } from 'lucide-react';
 import { UserRestrictions, UserRestriction } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
+import { useUI } from '../../context/UIContext';
+import { BADGE_DEFS } from '../UserBadges/UserBadges';
 import './ModerationModalNew.css';
 
 interface ModerationModalProps {
@@ -19,6 +21,7 @@ interface ModerationModalProps {
     restrictions?: UserRestrictions;
     warnings?: UserRestriction[];
     activeRestrictions?: UserRestriction[];
+    badges?: string[];
   };
   token: string;
   onClose: () => void;
@@ -35,7 +38,10 @@ const WARNING_CATEGORIES = [
 ];
 
 export function ModerationModalNew({ user, token, onClose, onUpdate }: ModerationModalProps) {
-  const [activeTab, setActiveTab] = useState<'info' | 'warnings' | 'restrictions' | 'actions'>('info');
+  const { toast, confirm: uiConfirm } = useUI();
+  const [activeTab, setActiveTab] = useState<'info' | 'warnings' | 'restrictions' | 'actions' | 'badges'>('info');
+  const [localBadges, setLocalBadges] = useState<string[]>(user.badges || []);
+  const [badgesLoading, setBadgesLoading] = useState(false);
   const [type] = useState<'warning' | 'restriction' | 'ban'>('warning');
   const [selectedCategory, setSelectedCategory] = useState<string>('other');
   const [reason, setReason] = useState('');
@@ -49,9 +55,38 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
   const [loading, setLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState<string | null>(null);
 
+  const handleBadgeToggle = async (badgeId: string) => {
+    const newBadges = localBadges.includes(badgeId)
+      ? localBadges.filter(b => b !== badgeId)
+      : [...localBadges, badgeId];
+    setBadgesLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3001/api/admin/users/${user.id}/badges`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ badges: newBadges })
+      });
+      if (response.ok) {
+        setLocalBadges(newBadges);
+        toast('Odznaki zaktualizowane', 'success');
+        onUpdate();
+      } else {
+        toast('Błąd aktualizacji odznak', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating badges:', error);
+      toast('Błąd połączenia', 'error');
+    } finally {
+      setBadgesLoading(false);
+    }
+  };
+
   const handleAddModeration = async () => {
     if (!reason.trim()) {
-      alert('Podaj powód');
+      toast('Please enter a reason', 'warning');
       return;
     }
 
@@ -67,21 +102,21 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
           type,
           category: type === 'warning' ? selectedCategory : undefined,
           reason: reason.trim(),
-          expiresIn: expiresIn ? Number(expiresIn) : undefined
+          expiresIn: expiresIn ? Number(expiresIn) * 60 * 1000 : undefined
         })
       });
 
       if (response.ok) {
-        alert(`${type === 'warning' ? 'Ostrzeżenie' : type === 'ban' ? 'Ban' : 'Ograniczenie'} dodane`);
+        toast(`${type === 'warning' ? 'Warning' : type === 'ban' ? 'Ban' : 'Restriction'} added`, 'success');
         setReason('');
         setExpiresIn('');
         onUpdate();
       } else {
-        alert('Błąd podczas dodawania moderacji');
+        toast('Failed to add moderation action', 'error');
       }
     } catch (error) {
       console.error('Error adding moderation:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
@@ -100,21 +135,21 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
       });
 
       if (response.ok) {
-        alert('Ograniczenia zaktualizowane');
+        toast('Restrictions updated', 'success');
         onUpdate();
       } else {
-        alert('Błąd podczas aktualizacji ograniczeń');
+        toast('Failed to update restrictions', 'error');
       }
     } catch (error) {
       console.error('Error updating restrictions:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearRestrictions = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć wszystkie ograniczenia?')) return;
+    if (!(await uiConfirm('Are you sure you want to remove all restrictions?'))) return;
 
     setLoading(true);
     try {
@@ -127,22 +162,22 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
       });
 
       if (response.ok) {
-        alert('Wszystkie ograniczenia zostały usunięte');
+        toast('All restrictions removed', 'success');
         onUpdate();
         onClose();
       } else {
-        alert('Błąd podczas usuwania ograniczeń');
+        toast('Failed to remove restrictions', 'error');
       }
     } catch (error) {
       console.error('Error clearing restrictions:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveWarning = async (index: number) => {
-    if (!confirm('Czy na pewno chcesz usunąć to ostrzeżenie?')) return;
+    if (!(await uiConfirm('Are you sure you want to remove this warning?'))) return;
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:3001/api/admin/users/${user.id}/warnings/${index}`, {
@@ -152,18 +187,18 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
       if (response.ok) {
         onUpdate();
       } else {
-        alert('Błąd podczas usuwania ostrzeżenia');
+        toast('Failed to remove warning', 'error');
       }
     } catch (error) {
       console.error('Error removing warning:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (!confirm(`Czy na pewno chcesz zresetować hasło użytkownika ${user.username}?`)) return;
+    if (!(await uiConfirm(`Are you sure you want to reset the password for ${user.username}?`))) return;
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:3001/api/admin/users/${user.id}/reset-password`, {
@@ -178,11 +213,11 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
         const data = await response.json();
         setResetPassword(data.password);
       } else {
-        alert('Błąd podczas resetowania hasła');
+        toast('Failed to reset password', 'error');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
@@ -191,7 +226,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
   const copyPassword = () => {
     if (resetPassword) {
       navigator.clipboard.writeText(resetPassword);
-      alert('Hasło skopiowane do schowka');
+      toast('Password copied to clipboard', 'success');
     }
   };
 
@@ -263,6 +298,16 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
           >
             <Ban size={18} />
             Akcje
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'badges' ? 'active' : ''}`}
+            onClick={() => setActiveTab('badges')}
+          >
+            <Award size={18} />
+            Odznaki
+            {localBadges.length > 0 && (
+              <span className="tab-badge">{localBadges.length}</span>
+            )}
           </button>
         </div>
 
@@ -368,12 +413,12 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 </div>
 
                 <div className="form-group">
-                  <label>Wygasa za (ms) - opcjonalne</label>
+                  <label>Wygasa za (minuty) - opcjonalne</label>
                   <input
                     type="number"
                     value={expiresIn}
                     onChange={(e) => setExpiresIn(e.target.value ? Number(e.target.value) : '')}
-                    placeholder="np. 86400000 = 24h"
+                    placeholder="np. 60 = 1h, 1440 = 24h"
                   />
                   <small>Pozostaw puste dla permanentnego</small>
                 </div>
@@ -565,6 +610,43 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                     Wyczyść wszystkie ograniczenia
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+          {/* BADGES TAB */}
+          {activeTab === 'badges' && (
+            <div className="tab-content">
+              <div className="badges-management-section">
+                <h3>
+                  <Award size={20} />
+                  Zarządzaj odznakami
+                </h3>
+                <p className="badges-hint">Kliknij odznakę aby ją przyznać lub zabrać.</p>
+                <div className="badges-grid">
+                  {BADGE_DEFS.map(badge => {
+                    const active = localBadges.includes(badge.id);
+                    return (
+                      <button
+                        key={badge.id}
+                        className={`badge-toggle-btn ${active ? 'active' : ''}`}
+                        style={{
+                          '--badge-color': badge.color,
+                          '--badge-bg': badge.bg
+                        } as React.CSSProperties}
+                        onClick={() => handleBadgeToggle(badge.id)}
+                        disabled={badgesLoading}
+                        title={active ? `Zabierz odznakę ${badge.label}` : `Nadaj odznakę ${badge.label}`}
+                      >
+                        <span className="badge-toggle-icon">{badge.icon}</span>
+                        <span className="badge-toggle-label">{badge.label}</span>
+                        <span className="badge-toggle-status">{active ? '✓' : '+'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {localBadges.length === 0 && (
+                  <p className="empty-state">Użytkownik nie ma żadnych odznak.</p>
+                )}
               </div>
             </div>
           )}

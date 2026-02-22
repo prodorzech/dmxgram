@@ -2,8 +2,8 @@
   width: 340px;
   min-width: 340px;
   max-width: 340px;
-  background: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(30, 30, 30, var(--panel-opacity, 0.95));
+  backdrop-filter: blur(var(--bg-blur, 10px));
   border-left: 1px solid var(--border-color);
   height: 100%;
   overflow-y: auto;
@@ -69,6 +69,13 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 4px;
+}
+
+.profile-sidebar-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .profile-sidebar-status-text {

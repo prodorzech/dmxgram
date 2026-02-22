@@ -8,6 +8,7 @@ import serverRoutes from './routes/servers';
 import friendRoutes from './routes/friends';
 import uploadRoutes from './routes/upload';
 import adminRoutes from './routes/admin';
+import reportsRoutes from './routes/reports';
 import { initializeSocket } from './socket';
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use('/api/servers', serverRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -17,6 +17,21 @@ export function Dashboard() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const { user, setUser, currentFriend } = useStore();
 
+  // Apply background blur CSS variable from localStorage on mount + live updates
+  useEffect(() => {
+    const applyBlur = () => {
+      const v = parseInt(localStorage.getItem('dmx-bg-blur') ?? '0', 10);
+      document.documentElement.style.setProperty('--bg-blur', `${(v / 100) * 20}px`);
+      // 0% blur = fully transparent panels (opacity 0)
+      // 100% blur = more opaque panels (opacity 0.95)
+      const panelOpacity = ((v / 100) * 0.95).toFixed(2);
+      document.documentElement.style.setProperty('--panel-opacity', panelOpacity);
+    };
+    applyBlur();
+    window.addEventListener('dmx-blur-changed', applyBlur);
+    return () => window.removeEventListener('dmx-blur-changed', applyBlur);
+  }, []);
+
   // Check if user needs to change password
   useEffect(() => {
     if (user?.mustChangePassword) {
@@ -43,18 +58,28 @@ export function Dashboard() {
     setShowChangePassword(false);
   };
 
-  const dashboardStyle: React.CSSProperties = user?.banner
-    ? {
-        backgroundImage: `url(${getImageUrl(user.banner)})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-      }
-    : {};
+  const bannerUrl = user?.banner ? getImageUrl(user.banner) : null;
+  const isGif = bannerUrl ? bannerUrl.toLowerCase().includes('.gif') : false;
 
   return (
-    <div className="dashboard" style={dashboardStyle}>
+    <div className="dashboard">
+      {/* Blurred background layer — always rendered; uses banner if set, otherwise a subtle gradient */}
+      {bannerUrl && isGif ? (
+        <img
+          className="dashboard-bg dashboard-bg-gif"
+          src={bannerUrl}
+          alt=""
+          aria-hidden="true"
+        />
+      ) : (
+        <div
+          className="dashboard-bg"
+          style={bannerUrl
+            ? { backgroundImage: `url(${bannerUrl})` }
+            : { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }
+          }
+        />
+      )}
       <div className="dashboard-overlay" data-chat-open={!!currentFriend ? 'true' : 'false'}>
         {showAdminPanel ? (
           <AdminPanel />

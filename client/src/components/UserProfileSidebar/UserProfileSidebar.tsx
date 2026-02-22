@@ -5,6 +5,7 @@ import { Friend } from '../../types';
 import { api } from '../../services/api';
 import { useStore } from '../../store';
 import { getImageUrl } from '../../utils/imageUrl';
+import { UserBadges } from '../UserBadges/UserBadges';
 import './UserProfileSidebar.css';
 
 interface UserProfileSidebarProps {
@@ -41,19 +42,6 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
     }
   };
 
-  const getStatusColor = (status: 'online' | 'offline' | 'away') => {
-    switch (status) {
-      case 'online':
-        return '#10b981';
-      case 'away':
-        return '#f59e0b';
-      case 'offline':
-        return '#6b7280';
-      default:
-        return '#6b7280';
-    }
-  };
-
   const getStatusText = (status: 'online' | 'offline' | 'away') => {
     switch (status) {
       case 'online':
@@ -80,16 +68,15 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
               {friend.username[0].toUpperCase()}
             </div>
           )}
-          <div 
-            className="profile-sidebar-status-indicator" 
-            style={{ backgroundColor: getStatusColor(friend.status) }}
-          />
         </div>
       </div>
 
       {/* User Info */}
       <div className="profile-sidebar-content">
         <div className="profile-sidebar-username">{friend.username}</div>
+        {friend.badges && friend.badges.length > 0 && (
+          <div className="profile-sidebar-badges"><UserBadges badges={friend.badges} size="md" /></div>
+        )}
         <div className="profile-sidebar-status-text">{getStatusText(friend.status)}</div>
 
         <div className="profile-sidebar-divider" />
@@ -130,10 +117,6 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
                         {mutual.username[0].toUpperCase()}
                       </div>
                     )}
-                    <div 
-                      className="mutual-friend-status-indicator" 
-                      style={{ backgroundColor: getStatusColor(mutual.status) }}
-                    />
                   </div>
                   <span className="mutual-friend-username">{mutual.username}</span>
                 </div>

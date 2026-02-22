@@ -1,6 +1,7 @@
 import { X, MessageCircle } from 'lucide-react';
 import { Friend } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
+import { UserBadges } from '../UserBadges/UserBadges';
 import './UserProfileModal.css';
 
 interface UserProfileModalProps {
@@ -45,16 +46,17 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
               ) : (
                 <div className="avatar-initial-large">{friend.username[0].toUpperCase()}</div>
               )}
-              <div
-                className="profile-status-indicator"
-                style={{ backgroundColor: getStatusColor() }}
-              />
             </div>
           </div>
 
           <div className="profile-info-section">
             <div className="profile-username-section">
-              <h2 className="profile-username">{friend.username}</h2>
+              <div className="profile-username-row">
+                <h2 className="profile-username">{friend.username}</h2>
+                {friend.badges && friend.badges.length > 0 && (
+                  <UserBadges badges={friend.badges} size="md" />
+                )}
+              </div>
               <div className="profile-status">
                 <span className="status-dot" style={{ backgroundColor: getStatusColor() }} />
                 {getStatusText()}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, AlertTriangle, Shield, Ban, Key } from 'lucide-react';
 import { UserRestrictions } from '../../types';
+import { useUI } from '../../context/UIContext';
 import './ModerationModal.css';
 
 interface ModerationModalProps {
@@ -17,6 +18,7 @@ interface ModerationModalProps {
 }
 
 export function ModerationModal({ user, token, onClose, onUpdate }: ModerationModalProps) {
+  const { toast, confirm: uiConfirm } = useUI();
   const [type, setType] = useState<'warning' | 'restriction' | 'ban'>('warning');
   const [reason, setReason] = useState('');
   const [expiresIn, setExpiresIn] = useState<number | ''>('');
@@ -31,7 +33,7 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
 
   const handleAddModeration = async () => {
     if (!reason.trim()) {
-      alert('Podaj powód');
+      toast('Please enter a reason', 'warning');
       return;
     }
 
@@ -46,21 +48,21 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
         body: JSON.stringify({
           type,
           reason: reason.trim(),
-          expiresIn: expiresIn ? Number(expiresIn) : undefined
+          expiresIn: expiresIn ? Number(expiresIn) * 60 * 1000 : undefined
         })
       });
 
       if (response.ok) {
-        alert(`${type === 'warning' ? 'Ostrzeżenie' : type === 'ban' ? 'Ban' : 'Ograniczenie'} dodane`);
+        toast(`${type === 'warning' ? 'Warning' : type === 'ban' ? 'Ban' : 'Restriction'} added`, 'success');
         setReason('');
         setExpiresIn('');
         onUpdate();
       } else {
-        alert('Błąd podczas dodawania moderacji');
+        toast('Failed to add moderation action', 'error');
       }
     } catch (error) {
       console.error('Error adding moderation:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
@@ -79,21 +81,21 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
       });
 
       if (response.ok) {
-        alert('Ograniczenia zaktualizowane');
+        toast('Restrictions updated', 'success');
         onUpdate();
       } else {
-        alert('Błąd podczas aktualizacji ograniczeń');
+        toast('Failed to update restrictions', 'error');
       }
     } catch (error) {
       console.error('Error updating restrictions:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearRestrictions = async () => {
-    if (!confirm('Czy na pewno chcesz usunąć wszystkie ograniczenia?')) return;
+    if (!(await uiConfirm('Are you sure you want to remove all restrictions?'))) return;
 
     setLoading(true);
     try {
@@ -106,22 +108,22 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
       });
 
       if (response.ok) {
-        alert('Wszystkie ograniczenia zostały usunięte');
+        toast('All restrictions removed', 'success');
         onUpdate();
         onClose();
       } else {
-        alert('Błąd podczas usuwania ograniczeń');
+        toast('Failed to remove restrictions', 'error');
       }
     } catch (error) {
       console.error('Error clearing restrictions:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (!confirm(`Czy na pewno chcesz zresetować hasło użytkownika ${user.username}? Zostanie wygenerowane nowe hasło, które musisz przekazać użytkownikowi.`)) return;
+    if (!(await uiConfirm(`Are you sure you want to reset the password for ${user.username}?`))) return;
 
     setLoading(true);
     try {
@@ -137,11 +139,11 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
         const data = await response.json();
         setResetPassword(data.password);
       } else {
-        alert('Błąd podczas resetowania hasła');
+        toast('Failed to reset password', 'error');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      alert('Błąd połączenia');
+      toast('Connection error', 'error');
     } finally {
       setLoading(false);
     }
@@ -150,7 +152,7 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
   const copyPassword = () => {
     if (resetPassword) {
       navigator.clipboard.writeText(resetPassword);
-      alert('Hasło skopiowane do schowka');
+      toast('Password copied to clipboard', 'success');
     }
   };
 
@@ -212,12 +214,12 @@ export function ModerationModal({ user, token, onClose, onUpdate }: ModerationMo
             </div>
 
             <div className="form-group">
-              <label>Wygasa za (ms) - opcjonalne</label>
+              <label>Wygasa za (minuty) - opcjonalne</label>
               <input
                 type="number"
                 value={expiresIn}
                 onChange={(e) => setExpiresIn(e.target.value ? Number(e.target.value) : '')}
-                placeholder="np. 86400000 = 24h"
+                placeholder="np. 60 = 1h, 1440 = 24h"
               />
               <small>Pozostaw puste dla permanentnego</small>
             </div>

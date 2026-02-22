@@ -9,6 +9,9 @@ import { getIO } from '../socket';
 
 const router = Router();
 
+// In-memory lock to prevent race-condition duplicate friend requests
+const pendingRequestLocks = new Set<string>();
+
 // Send friend request
 router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, async (req: AuthRequest, res) => {
   try {
@@ -22,44 +25,73 @@ router.post('/request', authMiddleware, checkBanned, checkCanAddFriends, async (
     // Find receiver by username
     const receiver = await db.getUserByUsername(username);
     if (!receiver) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
+      return res.status(404).json({ error: 'errUserNotFound' });
     }
 
     if (receiver.id === senderId) {
-      return res.status(400).json({ error: 'Nie możesz dodać siebie do znajomych' });
+      return res.status(400).json({ error: 'errSelfAdd' });
+    }
+
+    // Check if either user has blocked the other
+    if (await db.isAnyBlockBetween(senderId, receiver.id)) {
+      return res.status(403).json({ error: 'errBlocked' });
     }
 
     // Check if already friends
     if (await db.areFriends(senderId, receiver.id)) {
-      return res.status(400).json({ error: 'Już jesteście znajomymi' });
+      return res.status(400).json({ error: 'errAlreadyFriends' });
     }
 
-    // Check if request already exists
-    const existingRequest = await db.findExistingFriendRequest(senderId, receiver.id);
-    if (existingRequest && existingRequest.status === 'pending') {
-      return res.status(400).json({ error: 'Zaproszenie do znajomych już istnieje' });
+    // In-memory lock — prevent simultaneous duplicate requests (race condition)
+    const lockKey = [senderId, receiver.id].sort().join(':');
+    if (pendingRequestLocks.has(lockKey)) {
+      return res.status(400).json({ error: 'errRequestExists' });
     }
+    pendingRequestLocks.add(lockKey);
 
-    const sender = await db.getUserById(senderId);
-    if (!sender) return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
-    const request: FriendRequest = {
-      id: uuidv4(),
-      senderId,
-      senderUsername: sender.username,
-      receiverId: receiver.id,
-      status: 'pending',
-      createdAt: new Date(),
-    };
-
-    await db.createFriendRequest(request);
-
-    // Notify receiver via socket in real-time
     try {
-      const io = getIO();
-      io.to(`user:${receiver.id}`).emit('friend:request', request);
-    } catch (e) { /* socket not yet initialized, ignore */ }
+      // Check if request already exists
+      const existingRequest = await db.findExistingFriendRequest(senderId, receiver.id);
+      if (existingRequest && existingRequest.status === 'pending') {
+        return res.status(400).json({ error: 'errRequestExists' });
+      }
+      // If old accepted/rejected request exists, delete it so we can create a fresh one
+      if (existingRequest) {
+        await db.deleteFriendRequestBetween(senderId, receiver.id);
+      }
 
-    res.json(request);
+      const sender = await db.getUserById(senderId);
+      if (!sender) return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
+      const request: FriendRequest = {
+        id: uuidv4(),
+        senderId,
+        senderUsername: sender.username,
+        receiverId: receiver.id,
+        status: 'pending',
+        createdAt: new Date(),
+      };
+
+      try {
+        await db.createFriendRequest(request);
+      } catch (dbErr: any) {
+        // Catch race-condition duplicate (DB unique constraint violation: Postgres code 23505)
+        const msg: string = dbErr?.message ?? dbErr?.code ?? '';
+        if (dbErr?.code === '23505' || msg.includes('23505') || msg.includes('unique') || msg.includes('duplicate')) {
+          return res.status(400).json({ error: 'errRequestExists' });
+        }
+        throw dbErr;
+      }
+
+      // Notify receiver via socket in real-time
+      try {
+        const io = getIO();
+        io.to(`user:${receiver.id}`).emit('friend:request', request);
+      } catch (e) { /* socket not yet initialized, ignore */ }
+
+      res.json(request);
+    } finally {
+      pendingRequestLocks.delete(lockKey);
+    }
   } catch (error) {
     console.error('Error sending friend request:', error);
     res.status(500).json({ error: 'Błąd serwera' });
@@ -195,6 +227,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       avatar: friend.avatar,
       bio: friend.bio,
       status: friend.status,
+      badges: friend.badges || [],
     }));
     res.json(friends);
   } catch (error) {
@@ -214,6 +247,9 @@ router.delete('/:friendId', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     await db.removeFriendship(userId, friendId);
+    // Also remove any friend_request records between these users
+    // so they can re-send invitations after removal
+    await db.deleteFriendRequestBetween(userId, friendId);
     res.json({ message: 'Znajomy usunięty' });
   } catch (error) {
     console.error('Error removing friend:', error);
@@ -259,6 +295,72 @@ router.get('/:friendId/mutual', authMiddleware, async (req: AuthRequest, res) =>
     res.json(mutualFriends);
   } catch (error) {
     console.error('Error fetching mutual friends:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Get blocked user IDs
+router.get('/blocked', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const blockedIds = await db.getBlockedUsers(userId);
+    if (blockedIds.length === 0) return res.json([]);
+    // Fetch user details for each blocked user
+    const blockedUsers = await Promise.all(
+      blockedIds.map(async (id) => {
+        const u = await db.getUserById(id);
+        if (!u) return null;
+        return { id: u.id, username: u.username, avatar: u.avatar };
+      })
+    );
+    res.json(blockedUsers.filter(Boolean));
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Block a user
+router.post('/:userId/block', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const blockerId = req.userId!;
+    const { userId: blockedId } = req.params;
+
+    if (blockerId === blockedId) {
+      return res.status(400).json({ error: 'Nie możesz zablokować siebie' });
+    }
+
+    await db.blockUser(blockerId, blockedId);
+
+    // Remove friendship if exists
+    if (await db.areFriends(blockerId, blockedId)) {
+      await db.removeFriendship(blockerId, blockedId);
+    }
+
+    // Notify blocked user via socket so they lose the friend from their list
+    try {
+      const io = getIO();
+      io.to(`user:${blockedId}`).emit('friend:removed', { friendId: blockerId });
+      io.to(`user:${blockerId}`).emit('friend:removed', { friendId: blockedId });
+    } catch (e) { /* ignore */ }
+
+    res.json({ message: 'Użytkownik zablokowany' });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    res.status(500).json({ error: 'Błąd serwera' });
+  }
+});
+
+// Unblock a user
+router.delete('/:userId/block', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const blockerId = req.userId!;
+    const { userId: blockedId } = req.params;
+
+    await db.unblockUser(blockerId, blockedId);
+    res.json({ message: 'Użytkownik odblokowany' });
+  } catch (error) {
+    console.error('Error unblocking user:', error);
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });

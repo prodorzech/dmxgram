@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '../../utils/imageUrl';
 import './UserInfoPopover.css';
 
@@ -13,6 +15,10 @@ interface UserInfoPopoverProps {
 }
 
 export function UserInfoPopover({ userId, username, avatar, bio, status, onClose, position }: UserInfoPopoverProps) {
+  const { t } = useTranslation();
+  const [idExpanded, setIdExpanded] = useState(false);
+  const [copied,     setCopied]     = useState(false);
+
   const getStatusColor = () => {
     switch (status) {
       case 'online': return '#10b981';
@@ -23,20 +29,27 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, onClose
 
   const getStatusText = () => {
     switch (status) {
-      case 'online': return 'Online';
-      case 'away': return 'Zaraz wracam';
-      default: return 'Offline';
+      case 'online': return t('status.online');
+      case 'away':   return t('status.away');
+      default:       return t('status.offline');
     }
+  };
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(userId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
     <>
       <div className="user-info-popover-overlay" onClick={onClose} />
-      <div 
-        className="user-info-popover" 
-        style={{ 
-          left: `${position.x}px`, 
-          top: `${position.y}px` 
+      <div
+        className="user-info-popover"
+        style={{
+          left: `${position.x}px`,
+          top:  `${position.y}px`,
         }}
       >
         <button className="popover-close-btn" onClick={onClose}>
@@ -50,29 +63,43 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, onClose
             ) : (
               <div className="popover-avatar-initial">{username[0].toUpperCase()}</div>
             )}
-            <div 
-              className="popover-status-indicator" 
-              style={{ backgroundColor: getStatusColor() }}
-            />
           </div>
         </div>
 
         <div className="popover-info">
           <h3 className="popover-username">{username}</h3>
-          <div className="popover-user-id">
-            <span className="user-id-label">ID:</span>
-            <span className="user-id-value">{userId}</span>
-          </div>
+
           <div className="popover-status">
             <span className="status-dot" style={{ backgroundColor: getStatusColor() }} />
             {getStatusText()}
           </div>
+
           {bio && (
             <div className="popover-bio">
-              <span className="bio-label">O użytkowniku:</span>
+              <span className="bio-label">{t('profile.bio')}</span>
               <p>{bio}</p>
             </div>
           )}
+
+          {/* 3-dot toggle for user ID */}
+          <div className="popover-id-section">
+            <button
+              className="popover-dots-btn"
+              onClick={() => setIdExpanded(v => !v)}
+              title="Show user ID"
+            >
+              <span className={`popover-dots-icon${idExpanded ? ' open' : ''}`}>•••</span>
+            </button>
+
+            {idExpanded && (
+              <div className="popover-id-row">
+                <span className="popover-id-value">{userId}</span>
+                <button className="popover-copy-btn" onClick={handleCopyId}>
+                  {copied ? t('update.copied') : t('update.copyId')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

@@ -1,6 +1,11 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, Notification } = require('electron');
 const path = require('path');
 const http = require('http');
+
+// Enable high refresh rate rendering (120fps+ for GIFs and animations)
+app.commandLine.appendSwitch('disable-frame-rate-limit');
+app.commandLine.appendSwitch('disable-gpu-vsync');
+app.commandLine.appendSwitch('force-high-performance-gpu');
 
 let mainWindow   = null;
 let splashWindow = null;
@@ -106,6 +111,7 @@ function createMain() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      backgroundThrottling: false,
     },
   });
 
@@ -148,38 +154,70 @@ function initAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.logger               = null;
 
+  let downloading = false;
+
   autoUpdater.on('update-available', (info) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-available', {
         version:     info.version,
         releaseDate: info.releaseDate,
       });
+      // Bring window to front so the blocking modal is visible
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
 
-  ipcMain.once('download-update', () => {
-    showUpdateWindow();
+  // Use ipcMain.on (not .once) so it works for every app session
+  ipcMain.on('download-update', () => {
+    if (downloading) return;
+    downloading = true;
     autoUpdater.downloadUpdate().catch((err) => {
       console.error('Download failed:', err.message);
+      downloading = false;
     });
   });
 
   autoUpdater.on('download-progress', (p) => {
-    if (updateWindow && !updateWindow.isDestroyed()) {
-      updateWindow.webContents
-        .executeJavaScript(`updateProgress(${p.percent},${p.transferred},${p.total},${p.bytesPerSecond})`)
-        .catch(() => {});
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-progress', p);
     }
   });
 
   autoUpdater.on('update-downloaded', () => {
-    setTimeout(() => autoUpdater.quitAndInstall(false, true), 1500);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-downloaded', {});
+    }
+    setTimeout(() => autoUpdater.quitAndInstall(true, true), 2500);
   });
 
-  autoUpdater.on('error', () => {}); // silence – expected if no publish config
+  autoUpdater.on('error', () => { downloading = false; }); // reset on error
 
+  // Check immediately on launch, then every 15 minutes
   autoUpdater.checkForUpdates().catch(() => {});
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 15 * 60 * 1000);
 }
+
+// ── Desktop notifications ────────────────────────────────────────────────
+ipcMain.on('show-notification', (_, { title, body }) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isFocused() && !mainWindow.isMinimized()) return;
+  if (!Notification.isSupported()) return;
+  const n = new Notification({
+    title,
+    body,
+    icon: path.join(__dirname, '..', 'client', 'public', 'logo.png'),
+  });
+  n.on('click', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+  n.show();
+});
 
 // ── App lifecycle ──────────────────────────────────────────────────────────
 app.whenReady().then(async () => {

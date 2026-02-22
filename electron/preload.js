@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Renderer → main
   downloadUpdate: () => ipcRenderer.send('download-update'),
+  showNotification: (opts) => ipcRenderer.send('show-notification', opts),
 
   // Cleanup
   removeUpdateListeners: () => {

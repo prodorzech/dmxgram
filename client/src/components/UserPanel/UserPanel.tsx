@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
+import { useUI } from '../../context/UIContext';
 import { Settings, LogOut, ChevronDown, Shield } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 import { api } from '../../services/api';
@@ -15,6 +16,7 @@ interface UserPanelProps {
 export function UserPanel({ onSettingsClick, onAdminClick }: UserPanelProps) {
   const { t } = useTranslation();
   const { user, token, logout, updateUserStatus } = useStore();
+  const { confirm } = useUI();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +77,9 @@ export function UserPanel({ onSettingsClick, onAdminClick }: UserPanelProps) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const ok = await confirm('Are you sure you want to log out?');
+    if (!ok) return;
     logout();
     window.location.href = '/';
   };
@@ -104,8 +108,7 @@ export function UserPanel({ onSettingsClick, onAdminClick }: UserPanelProps) {
             <span className="user-status-text">{getStatusText()}</span>
             <ChevronDown size={14} className="status-chevron" />
           </div>
-          {user.customStatus && <div className="user-custom-status">{user.customStatus}</div>}
-          {!user.customStatus && user.bio && <div className="user-bio-text">{user.bio}</div>}
+
           
           {showStatusMenu && (
             <div className="status-menu" ref={statusMenuRef}>

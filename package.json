@@ -1,6 +1,6 @@
 {
   "name": "dmx-chat",
-  "version": "1.0.9",
+  "version": "1.8.4",
   "description": "Full-stack chat application like Discord",
   "main": "electron/main.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "start": "cd server && npm start",
     "electron": "electron .",
     "electron:dev": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder --win && npm run build:stub",
+    "build:stub": "if not exist stub-dist mkdir stub-dist && \"%LOCALAPPDATA%\\electron-builder\\Cache\\nsis\\nsis-3.0.4.1\\makensis.exe\" stub\\DMXGram-Downloader.nsi",
     "dist:zip": "npm run build && electron-builder --win --config.win.target=zip",
     "dist:nsis": "npm run build && electron-builder --win --config.win.target=nsis"
   },
@@ -42,7 +43,8 @@
     "publish": {
       "provider": "github",
       "owner": "prodorzech",
-      "repo": "dmxgram"
+      "repo": "dmxgram",
+      "releaseType": "release"
     },
     "directories": {
       "output": "dist"
@@ -65,6 +67,7 @@
         }
       ],
       "icon": "client/public/logo.png",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "signingHashAlgorithms": null,
       "sign": null
     },
@@ -72,13 +75,13 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerHeader": "build/installer-header.bmp",
-      "installerSidebar": "build/installer-sidebar.bmp",
+      "language": "1033",
       "license": "build/license.txt",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DMXGram",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
     }
   },
   "dependencies": {
@@ -94,3 +97,4 @@
     "uuid": "^9.0.1"
   }
 }
+

@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 let _supabase: any = null;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getSupabase(): any {
+export function getSupabase(): any {
   if (!_supabase) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -41,6 +41,7 @@ function rowToUser(row: any): User {
     restrictions: row.restrictions || {},
     warnings: row.warnings || [],
     activeRestrictions: row.active_restrictions || [],
+    badges: row.badges || [],
   };
 }
 
@@ -83,6 +84,7 @@ function rowToDM(row: any): DirectMessage {
     read: row.read || false,
     edited: row.edited || false,
     editedAt: row.edited_at ? new Date(row.edited_at) : undefined,
+    reactions: [],
   };
 }
 
@@ -139,6 +141,35 @@ export class Database {
 
   // In-memory status cache (updates too frequent for DB writes)
   private statusCache: Map<string, User['status']> = new Map();
+
+  // In-memory reaction fallback – used when message_reactions table doesn’t exist yet
+  private reactionMemory: Map<string, { emoji: string; userIds: string[] }[]> = new Map();
+
+  toggleReactionInMemory(messageId: string, userId: string, emoji: string): { emoji: string; userIds: string[] }[] {
+    const current = this.reactionMemory.get(messageId) || [];
+    const existingIdx = current.findIndex(r => r.emoji === emoji);
+    let updated: { emoji: string; userIds: string[] }[];
+    if (existingIdx >= 0 && current[existingIdx].userIds.includes(userId)) {
+      const newUserIds = current[existingIdx].userIds.filter(id => id !== userId);
+      updated = newUserIds.length === 0
+        ? current.filter(r => r.emoji !== emoji)
+        : current.map(r => r.emoji === emoji ? { ...r, userIds: newUserIds } : r);
+    } else if (existingIdx >= 0) {
+      updated = current.map(r => r.emoji === emoji ? { ...r, userIds: [...r.userIds, userId] } : r);
+    } else {
+      updated = [...current, { emoji, userIds: [userId] }];
+    }
+    this.reactionMemory.set(messageId, updated);
+    return updated;
+  }
+
+  getReactionMemory(messageId: string): { emoji: string; userIds: string[] }[] {
+    return this.reactionMemory.get(messageId) || [];
+  }
+
+  setReactionMemory(messageId: string, reactions: { emoji: string; userIds: string[] }[]): void {
+    this.reactionMemory.set(messageId, reactions);
+  }
   // ── Users ──────────────────────────────────────────────────────────────────
 
   async createUser(user: User): Promise<User> {
@@ -161,6 +192,7 @@ export class Database {
       restrictions: user.restrictions || {},
       warnings: user.warnings || [],
       active_restrictions: user.activeRestrictions || [],
+      badges: user.badges || [],
     });
     if (error) throw error;
     return user;
@@ -240,6 +272,7 @@ export class Database {
     if (updates.restrictions !== undefined) dbUpdates.restrictions = updates.restrictions;
     if (updates.warnings !== undefined) dbUpdates.warnings = updates.warnings;
     if (updates.activeRestrictions !== undefined) dbUpdates.active_restrictions = updates.activeRestrictions;
+    if (updates.badges !== undefined) dbUpdates.badges = updates.badges;
 
     const { data, error } = await getSupabase()
       .from('users')
@@ -482,7 +515,38 @@ export class Database {
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw error;
-    return (data || []).map(rowToDM).reverse();
+    const messages: DirectMessage[] = (data || []).map(rowToDM).reverse();
+    if (messages.length === 0) return messages;
+
+    // Attach reactions (if table exists)
+    try {
+      const messageIds = messages.map(m => m.id);
+      const { data: reactionRows } = await getSupabase()
+        .from('message_reactions')
+        .select('message_id, user_id, emoji')
+        .in('message_id', messageIds);
+      if (reactionRows && reactionRows.length > 0) {
+        const reactionMap = new Map<string, { emoji: string; userIds: string[] }[]>();
+        for (const row of reactionRows) {
+          if (!reactionMap.has(row.message_id)) reactionMap.set(row.message_id, []);
+          const list = reactionMap.get(row.message_id)!;
+          const existing = list.find(r => r.emoji === row.emoji);
+          if (existing) existing.userIds.push(row.user_id);
+          else list.push({ emoji: row.emoji, userIds: [row.user_id] });
+        }
+        for (const msg of messages) {
+          msg.reactions = reactionMap.get(msg.id) || [];
+        }
+      }
+    } catch {
+      // message_reactions table may not exist yet — fall back to in-memory cache
+      for (const msg of messages) {
+        const memReactions = this.getReactionMemory(msg.id);
+        if (memReactions.length) msg.reactions = memReactions;
+      }
+    }
+
+    return messages;
   }
 
   async getDirectMessageById(userId1: string, userId2: string, messageId: string): Promise<DirectMessage | null> {
@@ -500,6 +564,16 @@ export class Database {
     const { error } = await getSupabase().from('direct_messages').delete().eq('id', messageId);
     if (error) throw error;
     return true;
+  }
+
+  async clearDirectMessages(userId1: string, userId2: string): Promise<void> {
+    const { error } = await getSupabase()
+      .from('direct_messages')
+      .delete()
+      .or(
+        `and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`
+      );
+    if (error) throw error;
   }
 
   async editDirectMessage(
@@ -592,6 +666,16 @@ export class Database {
     return rowToFriendRequest(data[0]);
   }
 
+  async deleteFriendRequestBetween(userId1: string, userId2: string): Promise<void> {
+    // Delete any friend_request between these two users regardless of direction or status
+    await getSupabase()
+      .from('friend_requests')
+      .delete()
+      .or(
+        `and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`
+      );
+  }
+
   // ── Friendships ────────────────────────────────────────────────────────────
 
   async createFriendship(friendship: Friendship): Promise<Friendship> {
@@ -680,10 +764,175 @@ export class Database {
     this.userSessions.delete(socketId);
   }
 
+  // ── Reports ────────────────────────────────────────────────────────────────
+
+  async createReport(report: {
+    id: string;
+    reporterId: string;
+    reporterUsername: string;
+    reportedUserId: string;
+    reportedUsername: string;
+    messageId: string;
+    messageContent: string;
+    senderId: string;
+    receiverId: string;
+  }): Promise<void> {
+    const { error } = await getSupabase().from('reports').insert({
+      id: report.id,
+      reporter_id: report.reporterId,
+      reporter_username: report.reporterUsername,
+      reported_user_id: report.reportedUserId,
+      reported_username: report.reportedUsername,
+      message_id: report.messageId,
+      message_content: report.messageContent,
+      sender_id: report.senderId,
+      receiver_id: report.receiverId,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  }
+
+  async getAllReports(): Promise<any[]> {
+    const { data, error } = await getSupabase()
+      .from('reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      reporterId: row.reporter_id,
+      reporterUsername: row.reporter_username,
+      reportedUserId: row.reported_user_id,
+      reportedUsername: row.reported_username,
+      messageId: row.message_id,
+      messageContent: row.message_content,
+      senderId: row.sender_id,
+      receiverId: row.receiver_id,
+      status: row.status,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async updateReportStatus(reportId: string, status: 'pending' | 'reviewed'): Promise<void> {
+    const { error } = await getSupabase()
+      .from('reports')
+      .update({ status })
+      .eq('id', reportId);
+    if (error) throw error;
+  }
+
+  // ── Message Reactions ──────────────────────────────────────────────────────
+
+  async addReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+    const { error } = await getSupabase().from('message_reactions').upsert({
+      message_id: messageId,
+      user_id: userId,
+      emoji,
+      created_at: new Date().toISOString(),
+    }, { onConflict: 'message_id,user_id,emoji' });
+    if (error) throw error;
+  }
+
+  async removeReaction(messageId: string, userId: string, emoji: string): Promise<void> {
+    const { error } = await getSupabase()
+      .from('message_reactions')
+      .delete()
+      .eq('message_id', messageId)
+      .eq('user_id', userId)
+      .eq('emoji', emoji);
+    if (error) throw error;
+  }
+
+  async getMessageReactions(messageId: string): Promise<{ emoji: string; userIds: string[] }[]> {
+    const { data, error } = await getSupabase()
+      .from('message_reactions')
+      .select('user_id, emoji')
+      .eq('message_id', messageId);
+    if (error) return [];
+    const map = new Map<string, string[]>();
+    for (const row of (data || [])) {
+      if (!map.has(row.emoji)) map.set(row.emoji, []);
+      map.get(row.emoji)!.push(row.user_id);
+    }
+    return Array.from(map.entries()).map(([emoji, userIds]) => ({ emoji, userIds }));
+  }
+
+  // ── User Blocks ────────────────────────────────────────────────────────────
+
+  async blockUser(blockerId: string, blockedId: string): Promise<void> {
+    const { error } = await getSupabase().from('user_blocks').upsert({
+      blocker_id: blockerId,
+      blocked_id: blockedId,
+      created_at: new Date().toISOString(),
+    }, { onConflict: 'blocker_id,blocked_id' });
+    if (error) throw error;
+  }
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    const { error } = await getSupabase()
+      .from('user_blocks')
+      .delete()
+      .eq('blocker_id', blockerId)
+      .eq('blocked_id', blockedId);
+    if (error) throw error;
+  }
+
+  /** Returns true if blockerId has blocked blockedId */
+  async isBlockedBy(blockerId: string, blockedId: string): Promise<boolean> {
+    const { data, error } = await getSupabase()
+      .from('user_blocks')
+      .select('blocker_id')
+      .eq('blocker_id', blockerId)
+      .eq('blocked_id', blockedId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  }
+
+  /** Returns true if EITHER user has blocked the other */
+  async isAnyBlockBetween(userId1: string, userId2: string): Promise<boolean> {
+    const { data, error } = await getSupabase()
+      .from('user_blocks')
+      .select('blocker_id')
+      .or(
+        `and(blocker_id.eq.${userId1},blocked_id.eq.${userId2}),and(blocker_id.eq.${userId2},blocked_id.eq.${userId1})`
+      )
+      .limit(1);
+    if (error) return false;
+    return data && data.length > 0;
+  }
+
+  /** Returns list of users that userId has blocked */
+  async getBlockedUsers(userId: string): Promise<string[]> {
+    const { data, error } = await getSupabase()
+      .from('user_blocks')
+      .select('blocked_id')
+      .eq('blocker_id', userId);
+    if (error) return [];
+    return (data || []).map((r: any) => r.blocked_id);
+  }
+
   // ── Initialize ─────────────────────────────────────────────────────────────
 
   async initialize(): Promise<void> {
     console.log('🔌 Connecting to Supabase...');
+
+    // Ensure user_blocks table exists
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (getSupabase() as any).sql`
+        CREATE TABLE IF NOT EXISTS user_blocks (
+          blocker_id UUID NOT NULL,
+          blocked_id UUID NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          PRIMARY KEY (blocker_id, blocked_id)
+        )
+      `;
+      console.log('✅ user_blocks table ready');
+    } catch (e) {
+      console.warn('⚠️  Could not auto-create user_blocks table (run migration manually):', e);
+    }
 
     const adminEmail = 'orzech@dmx.suko';
     const existing = await this.getUserByEmail(adminEmail);

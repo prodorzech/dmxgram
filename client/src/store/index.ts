@@ -15,6 +15,7 @@ interface AppState {
   friends: Friend[];
   currentFriend: Friend | null;
   friendRequests: FriendRequest[];
+  blockedUserIds: string[];
   setFriends: (friends: Friend[]) => void;
   setCurrentFriend: (friend: Friend | null) => void;
   addFriend: (friend: Friend) => void;
@@ -22,12 +23,16 @@ interface AppState {
   setFriendRequests: (requests: FriendRequest[]) => void;
   addFriendRequest: (request: FriendRequest) => void;
   removeFriendRequest: (requestId: string) => void;
+  setBlockedUserIds: (ids: string[]) => void;
+  addBlockedUserId: (id: string) => void;
+  removeBlockedUserId: (id: string) => void;
 
   // Direct Messages
   directMessages: DirectMessage[];
   setDirectMessages: (messages: DirectMessage[]) => void;
   addDirectMessage: (message: DirectMessage) => void;
   updateDirectMessage: (id: string, content: string) => void;
+  updateDirectMessageReactions: (id: string, reactions: DirectMessage['reactions']) => void;
   removeDirectMessage: (id: string) => void;
 
   // UI State
@@ -77,6 +82,7 @@ export const useStore = create<AppState>((set) => ({
   friends: [],
   currentFriend: null,
   friendRequests: [],
+  blockedUserIds: [],
   setFriends: (friends) => set({ friends }),
   setCurrentFriend: (friend) => set({ currentFriend: friend }),
   addFriend: (friend) => set((state) => ({ friends: [...state.friends, friend] })),
@@ -91,6 +97,9 @@ export const useStore = create<AppState>((set) => ({
     set((state) => ({
       friendRequests: state.friendRequests.filter((r) => r.id !== requestId)
     })),
+  setBlockedUserIds: (ids) => set({ blockedUserIds: ids }),
+  addBlockedUserId: (id) => set((state) => ({ blockedUserIds: [...state.blockedUserIds.filter(x => x !== id), id] })),
+  removeBlockedUserId: (id) => set((state) => ({ blockedUserIds: state.blockedUserIds.filter(x => x !== id) })),
 
   // Direct Messages
   directMessages: [],
@@ -100,6 +109,12 @@ export const useStore = create<AppState>((set) => ({
     set((state) => ({
       directMessages: state.directMessages.map((dm) =>
         dm.id === id ? { ...dm, content, edited: true } : dm
+      )
+    })),
+  updateDirectMessageReactions: (id, reactions) =>
+    set((state) => ({
+      directMessages: state.directMessages.map((dm) =>
+        dm.id === id ? { ...dm, reactions } : dm
       )
     })),
   removeDirectMessage: (id) =>

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../services/api';
-import { X, User as UserIcon, Upload, Moon, Sun, Globe, AlertTriangle } from 'lucide-react';
+import { X, User as UserIcon, Upload, Moon, Sun, Globe, AlertTriangle, Layers, Bell } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +14,7 @@ interface UserSettingsModalProps {
 export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   const { user, token, setUser, theme, toggleTheme } = useStore();
   const { i18n, t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'profile' | 'account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'account'>('profile');
   const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [customStatus, setCustomStatus] = useState(user?.customStatus || '');
@@ -22,6 +22,12 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '');
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState(user?.banner || '');
+  const [bgBlur, setBgBlur] = useState<number>(() =>
+    parseInt(localStorage.getItem('dmx-bg-blur') ?? '0', 10)
+  );
+  const [desktopNotif, setDesktopNotif] = useState<boolean>(
+    () => localStorage.getItem('dmx-desktop-notifications') !== 'false'
+  );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +59,23 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
       setBannerPreview(URL.createObjectURL(file));
       setError('');
     }
+  };
+
+  const handleBgBlurChange = (value: number) => {
+    setBgBlur(value);
+    localStorage.setItem('dmx-bg-blur', value.toString());
+    document.documentElement.style.setProperty('--bg-blur', `${(value / 100) * 20}px`);
+    // 0% blur = fully transparent panels (opacity 0)
+    // 100% blur = more opaque panels (opacity 0.95)
+    const panelOpacity = ((value / 100) * 0.95).toFixed(2);
+    document.documentElement.style.setProperty('--panel-opacity', panelOpacity);
+    window.dispatchEvent(new CustomEvent('dmx-blur-changed'));
+  };
+
+  const handleDesktopNotifToggle = () => {
+    const next = !desktopNotif;
+    setDesktopNotif(next);
+    localStorage.setItem('dmx-desktop-notifications', next.toString());
   };
 
   const handleLanguageChange = async (languageCode: string) => {
@@ -95,24 +118,35 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
         bannerUrl = uploadResponse.url;
       }
 
-      const updatedUser = await api.updateProfile(
-        username !== user.username ? username : undefined,
-        avatarUrl !== user.avatar ? avatarUrl : undefined,
-        bannerUrl !== user.banner ? bannerUrl : undefined,
-        bio !== user.bio ? bio : undefined,
-        token!
-      );
-      
+      const usernameChanged = username !== user.username;
+      const avatarChanged = avatarUrl !== user.avatar;
+      const bannerChanged = bannerUrl !== user.banner;
+      const bioChanged = bio !== user.bio;
+      const statusChanged = customStatus !== user.customStatus;
+
+      let finalUser = user;
+
+      // Only call updateProfile if at least one profile field changed
+      if (usernameChanged || avatarChanged || bannerChanged || bioChanged) {
+        const updatedUser = await api.updateProfile(
+          usernameChanged ? username : undefined,
+          avatarChanged ? avatarUrl : undefined,
+          bannerChanged ? bannerUrl : undefined,
+          bioChanged ? bio : undefined,
+          token!
+        );
+        finalUser = updatedUser;
+      }
+
       // Update custom status separately if changed
-      let finalUser = updatedUser;
-      if (customStatus !== user.customStatus) {
+      if (statusChanged) {
         finalUser = await api.updateCustomStatus(customStatus, token!);
       }
-      
+
       setUser(finalUser);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Nie udało się zaktualizować profilu');
+      setError(err.message || t('errors.updateProfile'));
     } finally {
       setLoading(false);
     }
@@ -136,6 +170,13 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
           >
             <UserIcon size={18} />
             {t('user.profile')}
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'appearance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('appearance')}
+          >
+            <Layers size={18} />
+            {t('user.appearance')}
           </button>
           <button
             className={`tab-button ${activeTab === 'account' ? 'active' : ''}`}
@@ -232,12 +273,15 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 <span className="upload-hint">{t('upload.avatarHint')}</span>
               </div>
             </div>
+          </div>
+          </>)}
+
+          {activeTab === 'appearance' && (
+          <>
+          <div className="settings-section">
+            <h3>{t('user.banner')}</h3>
 
             <div className="form-group">
-              <label htmlFor="banner">
-                <Upload size={16} />
-                {t('user.banner')}
-              </label>
               <div className="banner-upload-container">
                 {bannerPreview && (
                   <div className="banner-preview">
@@ -268,6 +312,55 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                   <span className="file-name">{bannerFile.name}</span>
                 )}
                 <span className="upload-hint">{t('upload.bannerHint')}</span>
+              </div>
+            </div>
+
+            {/* Background blur slider + live preview */}
+            <div className="form-group">
+              <label>
+                <Layers size={16} />
+                {t('user.bgBlur')} — {bgBlur}%
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={bgBlur}
+                onChange={(e) => handleBgBlurChange(parseInt(e.target.value, 10))}
+                className="volume-slider"
+              />
+              <div className="volume-labels">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+              </div>
+              <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>{t('user.bgBlurHint')}</small>
+            </div>
+
+            {/* Blur preview */}
+            <div className="blur-preview-container">
+              <div
+                className="blur-preview-bg"
+                style={{
+                  backgroundImage: bannerPreview
+                    ? `url(${getImageUrl(bannerPreview)})`
+                    : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                  filter: `blur(${(bgBlur / 100) * 20}px)`,
+                  transform: 'scale(1.08)',
+                }}
+              />
+              <div className="blur-preview-overlay">
+                <div className="blur-preview-msg blur-preview-msg--received">
+                  <div className="blur-preview-avatar">A</div>
+                  <div className="blur-preview-bubble blur-preview-bubble--received">Hey, how are you? 👋</div>
+                </div>
+                <div className="blur-preview-msg blur-preview-msg--sent">
+                  <div className="blur-preview-bubble blur-preview-bubble--sent">I'm good! Check out my background 😄</div>
+                </div>
+                <div className="blur-preview-msg blur-preview-msg--received">
+                  <div className="blur-preview-avatar">A</div>
+                  <div className="blur-preview-bubble blur-preview-bubble--received">Looks great! 🔥</div>
+                </div>
               </div>
             </div>
           </div>
@@ -322,6 +415,26 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 ))}
               </div>
             </div>
+
+            {/* Desktop notifications toggle */}
+            <div className="form-group">
+              <label>
+                <Bell size={16} />
+                {t('user.desktopNotifications')}
+              </label>
+              <div className="notif-toggle-row">
+                <small style={{ color: 'var(--text-muted)' }}>{t('user.desktopNotificationsHint')}</small>
+                <button
+                  type="button"
+                  className={`notif-toggle-btn ${desktopNotif ? 'active' : ''}`}
+                  onClick={handleDesktopNotifToggle}
+                  disabled={loading}
+                >
+                  {desktopNotif ? t('user.notifEnabled') : t('user.notifDisabled')}
+                </button>
+              </div>
+            </div>
+
           </div>
           </>)}
 

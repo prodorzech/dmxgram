@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS friend_requests (
   sender_username TEXT NOT NULL,
   receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT unique_friend_request UNIQUE (sender_id, receiver_id)
 );
 
 -- Friendships
@@ -99,6 +100,21 @@ CREATE TABLE IF NOT EXISTS friendships (
   user_id2 TEXT REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (user_id1, user_id2)
+);
+
+-- Reports
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reporter_username TEXT NOT NULL,
+  reported_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reported_username TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  message_content TEXT NOT NULL,
+  sender_id TEXT NOT NULL,
+  receiver_id TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Disable RLS (server uses service_role key – full access)
@@ -110,3 +126,4 @@ ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE direct_messages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE friend_requests DISABLE ROW LEVEL SECURITY;
 ALTER TABLE friendships DISABLE ROW LEVEL SECURITY;
+ALTER TABLE reports DISABLE ROW LEVEL SECURITY;

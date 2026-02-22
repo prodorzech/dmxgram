@@ -6,6 +6,7 @@ import { db } from '../database';
 import { User, AuthResponse } from '../types';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { validatePassword } from '../utils/passwordValidation';
+import { getIO } from '../socket';
 
 const router: Router = express.Router();
 
@@ -25,7 +26,8 @@ const serializeUser = (user: User) => ({
   mustChangePassword: user.mustChangePassword,
   restrictions: user.restrictions,
   warnings: user.warnings,
-  activeRestrictions: user.activeRestrictions
+  activeRestrictions: user.activeRestrictions,
+  badges: user.badges || []
 });
 
 // Register
@@ -180,6 +182,19 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
     }
 
+    // Notify all friends about profile update (so their friend list refreshes avatar etc.)
+    try {
+      const io = getIO();
+      const friends = await db.getFriends(req.userId!);
+      const payload = {
+        userId: updatedUser.id,
+        username: updatedUser.username,
+        avatar: updatedUser.avatar,
+        bio: updatedUser.bio,
+      };
+      friends.forEach(f => io.to(`user:${f.id}`).emit('user:profile:updated', payload));
+    } catch (_) { /* socket not ready */ }
+
     res.json(serializeUser(updatedUser));
   } catch (error) {
     console.error('Update profile error:', error);
@@ -196,7 +211,9 @@ router.patch('/me/status', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Nieprawidłowy status' });
     }
 
+    // Update in-memory cache AND persist to DB as preferred status
     db.updateUserStatus(req.userId!, status);
+    await db.updateUser(req.userId!, { status });
     const user = await db.getUserById(req.userId!);
 
     if (!user) {

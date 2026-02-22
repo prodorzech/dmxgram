@@ -60,6 +60,14 @@ class SocketService {
   off(event: string, callback?: (...args: any[]) => void) {
     this.socket?.off(event, callback);
   }
+
+  onConnect(callback: () => void) {
+    this.socket?.on('connect', callback);
+  }
+
+  offConnect(callback: () => void) {
+    this.socket?.off('connect', callback);
+  }
 }
 
 export const socketService = new SocketService();

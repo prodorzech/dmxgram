@@ -34,6 +34,7 @@ export interface User {
   restrictions?: UserRestrictions;
   warnings?: UserRestriction[];
   activeRestrictions?: UserRestriction[];
+  badges?: string[];
 }
 
 export interface Server {
@@ -82,6 +83,7 @@ export interface DirectMessage {
   read: boolean;
   edited?: boolean;
   editedAt?: Date;
+  reactions?: { emoji: string; userIds: string[] }[];
 }
 
 export interface FriendRequest {

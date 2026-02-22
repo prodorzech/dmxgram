@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Key, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { useUI } from '../../context/UIContext';
 import './ChangePasswordModal.css';
 
 interface ChangePasswordModalProps {
@@ -17,6 +18,7 @@ const passwordRequirements = [
 ];
 
 export function ChangePasswordModal({ isForced = false, onClose, onSuccess }: ChangePasswordModalProps) {
+  const { toast } = useUI();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -65,7 +67,7 @@ export function ChangePasswordModal({ isForced = false, onClose, onSuccess }: Ch
       });
 
       if (response.ok) {
-        alert('Hasło zostało zmienione pomyślnie!');
+        toast('Hasło zostało zmienione pomyślnie!', 'success');
         onSuccess();
       } else {
         const data = await response.json();

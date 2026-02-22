@@ -136,6 +136,21 @@ export const api = {
     return res.json();
   },
 
+  async uploadChatFiles(files: File[], token: string): Promise<{ attachments: Array<{ url: string; filename: string; mimetype: string; size: number }> }> {
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    const res = await fetch(`${API_URL}/api/upload/chat`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to upload files');
+    }
+    return res.json();
+  },
+
   // Servers
   async getServers(token: string) {
     const res = await fetch(`${API_URL}/api/servers`, {
@@ -297,6 +312,38 @@ export const api = {
     return res.json();
   },
 
+  async getBlockedUsers(token: string): Promise<{id: string; username: string; avatar?: string}[]> {
+    const res = await fetch(`${API_URL}/api/friends/blocked`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async blockUser(userId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/friends/${userId}/block`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to block user');
+    }
+    return res.json();
+  },
+
+  async unblockUser(userId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/friends/${userId}/block`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to unblock user');
+    }
+    return res.json();
+  },
+
   async getDirectMessages(friendId: string, token: string) {
     const res = await fetch(`${API_URL}/api/friends/${friendId}/messages`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -310,6 +357,68 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch mutual friends');
+    return res.json();
+  },
+
+  async reportMessage(payload: {
+    messageId: string;
+    messageContent: string;
+    reportedUserId: string;
+    reportedUsername: string;
+    senderId: string;
+    receiverId: string;
+    category: string;
+    reason: string;
+  }, token: string) {
+    const res = await fetch(`${API_URL}/api/reports`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to submit report');
+    return res.json();
+  },
+
+  // Admin report methods
+  async getAdminReports(token: string) {
+    const res = await fetch(`${API_URL}/api/admin/reports`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch reports');
+    return res.json();
+  },
+
+  async updateReportStatus(reportId: string, status: 'pending' | 'reviewed', token: string) {
+    const res = await fetch(`${API_URL}/api/admin/reports/${reportId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Failed to update report status');
+    return res.json();
+  },
+
+  async getReportConversation(reportId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/admin/reports/${reportId}/conversation`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch conversation');
+    return res.json();
+  },
+
+  async updateUserBadges(userId: string, badges: string[], token: string) {
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}/badges`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ badges })
+    });
+    if (!res.ok) throw new Error('Failed to update badges');
     return res.json();
   }
 };
