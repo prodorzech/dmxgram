@@ -20,7 +20,20 @@
     "createNewAccount": "Neues Konto erstellen",
     "enterUsername": "Gib deinen Benutzernamen ein",
     "enterEmail": "Gib deine E-Mail ein",
-    "enterPassword": "Gib dein Passwort ein"
+    "enterPassword": "Gib dein Passwort ein",
+    "verifyEmail": "E-Mail bestätigen",
+    "verifyEmailSent": "Wir haben einen 6-stelligen Code an {{email}} gesendet",
+    "verifyCode": "Verifizierungscode",
+    "enterCode": "6-stelligen Code eingeben",
+    "verify": "Bestätigen",
+    "verifying": "Wird verifiziert...",
+    "resendCode": "Code erneut senden",
+    "codeSent": "Neuer Code gesendet! Prüfe deinen Posteingang.",
+    "didntReceiveCode": "Keinen Code erhalten?",
+    "backToLogin": "Zurück zum Login",
+    "errEmailNotVerified": "Bestätige deine E-Mail vor dem Einloggen",
+    "errInvalidCode": "Ungültiger Verifizierungscode",
+    "errCodeExpired": "Code abgelaufen, neuen anfordern"
   },
   "dashboard": {
     "nothingSelected": "Keine Konversation ausgewählt",

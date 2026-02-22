@@ -20,7 +20,20 @@
     "createNewAccount": "Créer un nouveau compte",
     "enterUsername": "Entrez votre nom d'utilisateur",
     "enterEmail": "Entrez votre e-mail",
-    "enterPassword": "Entrez votre mot de passe"
+    "enterPassword": "Entrez votre mot de passe",
+    "verifyEmail": "Vérifiez votre email",
+    "verifyEmailSent": "Nous avons envoyé un code à 6 chiffres à {{email}}",
+    "verifyCode": "Code de vérification",
+    "enterCode": "Entrez le code à 6 chiffres",
+    "verify": "Vérifier",
+    "verifying": "Vérification...",
+    "resendCode": "Renvoyer le code",
+    "codeSent": "Nouveau code envoyé ! Vérifiez votre boîte.",
+    "didntReceiveCode": "Vous n'avez pas reçu le code ?",
+    "backToLogin": "Retour à la connexion",
+    "errEmailNotVerified": "Vérifiez votre email avant de vous connecter",
+    "errInvalidCode": "Code de vérification invalide",
+    "errCodeExpired": "Code expiré, demandez-en un nouveau"
   },
   "dashboard": {
     "nothingSelected": "Aucune conversation sélectionnée",

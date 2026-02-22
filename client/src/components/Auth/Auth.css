@@ -509,3 +509,58 @@
   border-color: rgba(220, 38, 38, 0.3);
   color: #b91c1c;
 }
+
+/* ── Email verification screen ────────────────────────────── */
+.verify-email-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  text-align: center;
+  padding: 20px 16px 12px;
+  background: rgba(220,38,38,0.07);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-radius: 12px;
+}
+
+.verify-email-info p {
+  font-size: 0.93rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.verify-icon {
+  color: rgba(220,38,38,0.85);
+  flex-shrink: 0;
+}
+
+.verify-code-input {
+  font-size: 1.6rem !important;
+  letter-spacing: 12px !important;
+  font-weight: 700 !important;
+  text-align: center;
+}
+
+.auth-back-link {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.auth-back-link:hover:not(:disabled) {
+  color: rgba(255,255,255,0.6);
+}
+
+[data-theme="light"] .verify-email-info p { color: rgba(0,0,0,0.65); }
+[data-theme="light"] .auth-back-link { color: rgba(0,0,0,0.35); }
+[data-theme="light"] .auth-back-link:hover:not(:disabled) { color: rgba(0,0,0,0.6); }
+}

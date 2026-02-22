@@ -20,7 +20,20 @@
     "createNewAccount": "Create a new account",
     "enterUsername": "Enter your username",
     "enterEmail": "Enter your email",
-    "enterPassword": "Enter your password"
+    "enterPassword": "Enter your password",
+    "verifyEmail": "Verify your email",
+    "verifyEmailSent": "We sent a 6-digit code to {{email}}",
+    "verifyCode": "Verification code",
+    "enterCode": "Enter 6-digit code",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "resendCode": "Resend code",
+    "codeSent": "New code sent! Check your inbox.",
+    "didntReceiveCode": "Didn't receive the code?",
+    "backToLogin": "Back to login",
+    "errEmailNotVerified": "Verify your email before logging in",
+    "errInvalidCode": "Invalid verification code",
+    "errCodeExpired": "Code has expired, request a new one"
   },
   "dashboard": {
     "nothingSelected": "No conversation selected",

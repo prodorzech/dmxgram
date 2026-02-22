@@ -42,6 +42,9 @@ function rowToUser(row: any): User {
     warnings: row.warnings || [],
     activeRestrictions: row.active_restrictions || [],
     badges: row.badges || [],
+    emailVerified: row.email_verified ?? false,
+    emailVerificationCode: row.email_verification_code ?? undefined,
+    emailVerificationExpires: row.email_verification_expires ? new Date(row.email_verification_expires) : undefined,
   };
 }
 
@@ -193,6 +196,9 @@ export class Database {
       warnings: user.warnings || [],
       active_restrictions: user.activeRestrictions || [],
       badges: user.badges || [],
+      email_verified: user.emailVerified ?? false,
+      email_verification_code: user.emailVerificationCode ?? null,
+      email_verification_expires: user.emailVerificationExpires?.toISOString() ?? null,
     });
     if (error) throw error;
     return user;
@@ -273,6 +279,9 @@ export class Database {
     if (updates.warnings !== undefined) dbUpdates.warnings = updates.warnings;
     if (updates.activeRestrictions !== undefined) dbUpdates.active_restrictions = updates.activeRestrictions;
     if (updates.badges !== undefined) dbUpdates.badges = updates.badges;
+    if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
+    if (updates.emailVerificationCode !== undefined) dbUpdates.email_verification_code = updates.emailVerificationCode;
+    if (updates.emailVerificationExpires !== undefined) dbUpdates.email_verification_expires = updates.emailVerificationExpires?.toISOString() ?? null;
 
     const { data, error } = await getSupabase()
       .from('users')

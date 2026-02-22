@@ -35,6 +35,9 @@ export interface User {
   warnings?: UserRestriction[];
   activeRestrictions?: UserRestriction[];
   badges?: string[];
+  emailVerified?: boolean;
+  emailVerificationCode?: string;
+  emailVerificationExpires?: Date;
 }
 
 export interface Server {

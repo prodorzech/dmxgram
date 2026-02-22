@@ -6,6 +6,7 @@ import { db } from '../database';
 import { User, AuthResponse } from '../types';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { validatePassword } from '../utils/passwordValidation';
+import { generateVerificationCode, sendVerificationEmail } from '../utils/email';
 import { getIO } from '../socket';
 
 const router: Router = express.Router();
@@ -113,7 +114,10 @@ router.post('/login', async (req, res) => {
     if (!validPassword) {
       return res.status(401).json({ error: 'Nieprawidłowe dane logowania' });
     }
-
+    // Block login if email not verified
+    if (!user.emailVerified) {
+      return res.status(403).json({ error: 'errEmailNotVerified', email: user.email });
+    }
     // Update last login IP and language from Accept-Language header
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || 
                      req.socket.remoteAddress || 

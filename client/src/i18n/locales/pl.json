@@ -20,7 +20,20 @@
     "createNewAccount": "Utwórz nowe konto",
     "enterUsername": "Wpisz swoją nazwę",
     "enterEmail": "Wpisz swój email",
-    "enterPassword": "Wpisz swoje hasło"
+    "enterPassword": "Wpisz swoje hasło",
+    "verifyEmail": "Potwierdź swój email",
+    "verifyEmailSent": "Wysłaliśmy 6-cyfrowy kod na {{email}}",
+    "verifyCode": "Kod weryfikacyjny",
+    "enterCode": "Wpisz kod 6-cyfrowy",
+    "verify": "Potwierdź",
+    "verifying": "Weryfikowanie...",
+    "resendCode": "Wyślij kod ponownie",
+    "codeSent": "Nowy kod wysłany! Sprawdź skrzynkę.",
+    "didntReceiveCode": "Nie otrzymałeś kodu?",
+    "backToLogin": "Powrót do logowania",
+    "errEmailNotVerified": "Potwierdź swój email przed zalogowaniem",
+    "errInvalidCode": "Nieprawidłowy kod weryfikacyjny",
+    "errCodeExpired": "Kod wygasł, poproś o nowy"
   },
   "dashboard": {
     "nothingSelected": "Nie wybrano konwersacji",

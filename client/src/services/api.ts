@@ -12,6 +12,32 @@ export const api = {
       const error = await res.json();
       throw new Error(error.error || 'Registration failed');
     }
+    return res.json(); // { needsVerification: true, email }  OR  normal user response
+  },
+
+  async verifyEmail(email: string, code: string) {
+    const res = await fetch(`${API_URL}/api/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Verification failed');
+    }
+    return res.json(); // AuthResponse with token + user
+  },
+
+  async resendVerification(email: string) {
+    const res = await fetch(`${API_URL}/api/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to resend code');
+    }
     return res.json();
   },
 
@@ -22,8 +48,10 @@ export const api = {
       body: JSON.stringify({ email, password })
     });
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Login failed');
+      const body = await res.json();
+      const err: any = new Error(body.error || 'Login failed');
+      if (body.email) err.email = body.email;  // carry email for verification redirect
+      throw err;
     }
     return res.json();
   },
