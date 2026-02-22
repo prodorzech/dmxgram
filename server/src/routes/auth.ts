@@ -99,7 +99,7 @@ router.post('/register', async (req, res) => {
       banner: null,
       bio: null,
       customStatus: null,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date() as unknown as string,
       status: 'online',
       language: 'pl',
       isAdmin: false,
