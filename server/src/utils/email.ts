@@ -17,7 +17,7 @@ export function generateVerificationCode(): string {
 }
 
 export async function sendVerificationEmail(to: string, username: string, code: string): Promise<void> {
-  const from = process.env.RESEND_FROM_EMAIL || 'DMXGram <noreply@dmxgram.app>';
+  const from = process.env.RESEND_FROM_EMAIL || 'DMXGram <noreply@svnhost.pl>';
   const resend = getResend();
 
   const { error } = await resend.emails.send({
