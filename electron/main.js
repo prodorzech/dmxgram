@@ -187,6 +187,7 @@ function createMain() {
     minWidth: 360,
     minHeight: 600,
     show: true,
+    frame: false,
     // Dark window background from frame 0 — Electron paints this color before ANY HTML loads
     backgroundColor: '#1a1a1a',
     icon: iconPath,
@@ -198,6 +199,10 @@ function createMain() {
       backgroundThrottling: false,
     },
   });
+
+  // Forward maximize / unmaximize state to renderer for titlebar icon
+  mainWindow.on('maximize',   () => mainWindow.webContents.send('maximized-change', true));
+  mainWindow.on('unmaximize', () => mainWindow.webContents.send('maximized-change', false));
 
   // CSP removed — Electron desktop app doesn't need restrictive CSP,
   // and it was blocking Supabase avatars + potentially JS/CSS resources.
@@ -349,6 +354,18 @@ function initAutoUpdater() {
     autoUpdater.checkForUpdates().catch(() => {});
   }, 15 * 60 * 1000);
 }
+
+// ── Window controls (custom titlebar) ─────────────────────────────────────
+ipcMain.on('window-minimize', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize(); });
+ipcMain.on('window-maximize', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMaximized()) mainWindow.unmaximize(); else mainWindow.maximize();
+});
+ipcMain.on('window-close', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close(); });
+ipcMain.handle('window-is-maximized', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  return mainWindow.isMaximized();
+});
 
 // ── Open URL in system browser ────────────────────────────────────────────
 ipcMain.on('open-external', (_, url) => {

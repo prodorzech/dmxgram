@@ -4,6 +4,7 @@ import { Auth } from './components/Auth/Auth';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { LoadingScreen } from './components/LoadingScreen/LoadingScreen';
 import { UpdateNotification } from './components/UpdateNotification/UpdateNotification';
+import { TitleBar } from './components/TitleBar/TitleBar';
 import { api } from './services/api';
 import { socketService } from './services/socket';
 import i18n from './i18n';
@@ -147,15 +148,26 @@ function App() {
   }, [isAuthenticated, token]);
 
   if (loading) {
-    return <LoadingScreen message={isAuthenticated ? 'Loading...' : 'Loading...'} />;
+    return (
+      <>
+        <TitleBar />
+        <LoadingScreen message={isAuthenticated ? 'Loading...' : 'Loading...'} />
+      </>
+    );
   }
 
   if (!isAuthenticated) {
-    return <Auth />;
+    return (
+      <>
+        <TitleBar />
+        <Auth />
+      </>
+    );
   }
 
   return (
     <>
+      <TitleBar />
       <UpdateNotification />
       <Dashboard />
     </>

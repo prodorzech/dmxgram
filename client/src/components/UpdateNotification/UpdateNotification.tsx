@@ -23,6 +23,12 @@ declare global {
       downloadUpdate:        () => void;
       removeUpdateListeners: () => void;
       showNotification:      (opts: { title: string; body: string }) => void;
+      openExternal:          (url: string) => void;
+      windowMinimize:        () => void;
+      windowMaximize:        () => void;
+      windowClose:           () => void;
+      isMaximized:           () => Promise<boolean>;
+      onMaximizedChange:     (cb: (isMaximized: boolean) => void) => void;
     };
   }
 }

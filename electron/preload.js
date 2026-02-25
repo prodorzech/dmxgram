@@ -11,6 +11,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showNotification: (opts) => ipcRenderer.send('show-notification', opts),
   openExternal: (url) => ipcRenderer.send('open-external', url),
 
+  // Window controls (custom titlebar)
+  windowMinimize: () => ipcRenderer.send('window-minimize'),
+  windowMaximize: () => ipcRenderer.send('window-maximize'),
+  windowClose:    () => ipcRenderer.send('window-close'),
+  isMaximized:    () => ipcRenderer.invoke('window-is-maximized'),
+  onMaximizedChange: (cb) => ipcRenderer.on('maximized-change', (_, val) => cb(val)),
+
   // Cleanup
   removeUpdateListeners: () => {
     ipcRenderer.removeAllListeners('update-available');
