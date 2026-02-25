@@ -3,9 +3,41 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../database';
+import { getSupabase } from '../database';
 import { Message, DirectMessage } from '../types';
 
 let io: SocketIOServer;
+
+// ── Supabase Realtime Broadcast (single shared channel for call signaling) ──
+let globalCallChannel: any = null;
+// Map userId → handler that forwards a broadcast payload to the user's local socket
+const callSignalHandlers = new Map<string, (payload: any) => void>();
+
+function ensureCallChannel() {
+  if (globalCallChannel) return globalCallChannel;
+
+  const supabase = getSupabase();
+  globalCallChannel = supabase.channel('dmxgram-call-signals', {
+    config: { broadcast: { self: false } }
+  });
+
+  globalCallChannel
+    .on('broadcast', { event: 'call-signal' }, (payload: any) => {
+      const { targetUserId, signalType, ...signalData } = payload.payload;
+      console.log(`[CALL-BROADCAST] Received ${signalType} for user ${targetUserId}`);
+      const handler = callSignalHandlers.get(targetUserId);
+      if (handler) {
+        handler({ signalType, ...signalData });
+      } else {
+        console.log(`[CALL-BROADCAST] No handler for user ${targetUserId} (user not connected)`);
+      }
+    })
+    .subscribe((status: string) => {
+      console.log(`[CALL-BROADCAST] Global channel status: ${status}`);
+    });
+
+  return globalCallChannel;
+}
 
 export const getIO = (): SocketIOServer => {
   if (!io) throw new Error('Socket.IO not initialized');
@@ -327,12 +359,33 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // ══════════════════════════════════════════════════════════════════════
-    //  VOICE / VIDEO CALLS  (WebRTC signaling relay)
+    //  VOICE / VIDEO CALLS  (WebRTC signaling via Supabase Realtime Broadcast)
+    //  Each Electron app runs its own local server, so socket.io events
+    //  NEVER cross between machines. We relay call signals through
+    //  Supabase Realtime Broadcast which IS shared between all instances.
     // ══════════════════════════════════════════════════════════════════════
+
+    // Ensure the single global broadcast channel is up, then register this user
+    const channel = ensureCallChannel();
+    callSignalHandlers.set(userId, (signalData: any) => {
+      const { signalType, ...rest } = signalData;
+      console.log(`[CALL] Forwarding ${signalType} to local socket of user ${userId}`);
+      socket.emit(signalType, rest);
+    });
+
+    // Helper: send a call signal to another user via the shared broadcast channel
+    const sendCallSignal = (targetUserId: string, signalType: string, data: any) => {
+      console.log(`[CALL] Sending ${signalType} from ${userId} to ${targetUserId} via Supabase Broadcast`);
+      channel.send({
+        type: 'broadcast',
+        event: 'call-signal',
+        payload: { targetUserId, signalType, ...data }
+      });
+    };
 
     // Initiate a call → forward offer to the target user
     socket.on('call:offer', (data: { targetUserId: string; offer: any; callType: 'voice' | 'video'; callerInfo: any }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:offer', {
+      sendCallSignal(data.targetUserId, 'call:offer', {
         callerId: userId,
         callerInfo: data.callerInfo,
         offer: data.offer,
@@ -342,7 +395,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
 
     // Answer a call → forward answer back to the caller
     socket.on('call:answer', (data: { targetUserId: string; answer: any }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:answer', {
+      sendCallSignal(data.targetUserId, 'call:answer', {
         answererId: userId,
         answer: data.answer
       });
@@ -350,43 +403,43 @@ export const initializeSocket = (httpServer: HTTPServer) => {
 
     // ICE candidate exchange
     socket.on('call:ice-candidate', (data: { targetUserId: string; candidate: any }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:ice-candidate', {
+      sendCallSignal(data.targetUserId, 'call:ice-candidate', {
         fromUserId: userId,
         candidate: data.candidate
       });
     });
 
-    // Hang up — either side can end the call
+    // Hang up
     socket.on('call:hangup', (data: { targetUserId: string }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:hangup', {
+      sendCallSignal(data.targetUserId, 'call:hangup', {
         fromUserId: userId
       });
     });
 
     // Reject incoming call
     socket.on('call:reject', (data: { targetUserId: string }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:reject', {
+      sendCallSignal(data.targetUserId, 'call:reject', {
         fromUserId: userId
       });
     });
 
-    // Busy signal — user is already in a call
+    // Busy signal
     socket.on('call:busy', (data: { targetUserId: string }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:busy', {
+      sendCallSignal(data.targetUserId, 'call:busy', {
         fromUserId: userId
       });
     });
 
-    // Renegotiate — when adding/removing video or screen share mid-call
+    // Renegotiate
     socket.on('call:renegotiate', (data: { targetUserId: string; offer: any }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:renegotiate', {
+      sendCallSignal(data.targetUserId, 'call:renegotiate', {
         fromUserId: userId,
         offer: data.offer
       });
     });
 
     socket.on('call:renegotiate-answer', (data: { targetUserId: string; answer: any }) => {
-      socket.to(`user:${data.targetUserId}`).emit('call:renegotiate-answer', {
+      sendCallSignal(data.targetUserId, 'call:renegotiate-answer', {
         fromUserId: userId,
         answer: data.answer
       });
@@ -396,6 +449,8 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.on('disconnect', async () => {
       console.log(`User disconnected: ${userId}`);
       clearInterval(heartbeatInterval);
+      // Remove this user's call signal handler
+      callSignalHandlers.delete(userId);
       db.removeSession(socket.id);
       // Only mark offline if this was the last active connection for this user
       if (db.countActiveSessions(userId) === 0) {
