@@ -655,40 +655,27 @@ export function CallOverlay() {
         <div className="call-ringing">
           <div className="call-ringing-bg" />
           <div className="call-ringing-content">
-            {/* Caller avatar (big, normal) */}
-            <div className={`call-avatar-wrapper caller${isSpeaking ? ' speaking' : ''}`}>
-              {callState === 'outgoing' && myAvatar ? (
-                <img src={myAvatar} alt="" className="call-avatar" />
-              ) : callState === 'incoming' && peerAvatar ? (
-                <img src={peerAvatar} alt="" className="call-avatar" />
+            {/* Big caller avatar with pulse rings */}
+            <div className="call-main-avatar">
+              {(callState === 'incoming' ? peerAvatar : myAvatar) ? (
+                <img
+                  src={(callState === 'incoming' ? peerAvatar : myAvatar)!}
+                  alt=""
+                  className="call-avatar call-avatar-big"
+                />
               ) : (
-                <div className="call-avatar call-avatar-initial">
-                  {callState === 'outgoing'
-                    ? (user?.username?.[0] || '?').toUpperCase()
-                    : (callInfo.peerUsername?.[0] || '?').toUpperCase()
-                  }
+                <div className="call-avatar call-avatar-initial call-avatar-big">
+                  {(callState === 'incoming'
+                    ? callInfo.peerUsername?.[0]
+                    : user?.username?.[0]
+                  || '?').toUpperCase()}
                 </div>
               )}
               <div className="call-pulse-ring" />
               <div className="call-pulse-ring delay" />
             </div>
 
-            {/* Callee avatar (dimmed) */}
-            <div className="call-avatar-wrapper callee dimmed">
-              {callState === 'outgoing' && peerAvatar ? (
-                <img src={peerAvatar} alt="" className="call-avatar" />
-              ) : callState === 'incoming' && myAvatar ? (
-                <img src={myAvatar} alt="" className="call-avatar" />
-              ) : (
-                <div className="call-avatar call-avatar-initial">
-                  {callState === 'outgoing'
-                    ? (callInfo.peerUsername?.[0] || '?').toUpperCase()
-                    : (user?.username?.[0] || '?').toUpperCase()
-                  }
-                </div>
-              )}
-            </div>
-
+            {/* Name + status */}
             <div className="call-ringing-info">
               <h3>
                 {callState === 'outgoing'
@@ -701,18 +688,20 @@ export function CallOverlay() {
               </p>
             </div>
 
+            {/* Action buttons with labels */}
             <div className="call-ringing-actions">
               {callState === 'incoming' && (
-                <button className="call-action-btn accept" onClick={handleAccept} title={t('call.accept')}>
-                  <Phone size={22} />
+                <button className="call-action-btn accept" onClick={handleAccept}>
+                  <span className="call-btn-icon"><Phone size={24} /></span>
+                  <span className="call-btn-label">{t('call.accept')}</span>
                 </button>
               )}
               <button
                 className="call-action-btn decline"
                 onClick={callState === 'incoming' ? rejectCall : handleHangup}
-                title={callState === 'incoming' ? t('call.decline') : t('call.cancel')}
               >
-                <PhoneOff size={22} />
+                <span className="call-btn-icon"><PhoneOff size={24} /></span>
+                <span className="call-btn-label">{callState === 'incoming' ? t('call.decline') : t('call.cancel')}</span>
               </button>
             </div>
           </div>
