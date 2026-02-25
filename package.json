@@ -1,6 +1,6 @@
 {
   "name": "dmx-chat",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "Full-stack chat application like Discord",
   "main": "electron/main.js",
   "scripts": {

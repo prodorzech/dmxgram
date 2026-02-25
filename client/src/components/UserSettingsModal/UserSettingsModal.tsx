@@ -11,6 +11,7 @@ import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import { GradientColorPicker } from '../GradientColorPicker/GradientColorPicker';
+import { PaymentModal } from '../PaymentModal/PaymentModal';
 import './UserSettingsModal.css';
 
 /* ── Custom Dropdown component ───────────────────────────────────────── */
@@ -138,10 +139,11 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   const micTestRef = useRef<{ stream: MediaStream; ctx: AudioContext; anim: number } | null>(null);
 
   /* ── Boost ── */
-  const [boostLoading, setBoostLoading]         = useState(false);
+  const [boostLoading]                          = useState(false);
   const [boostCode, setBoostCode]               = useState('');
   const [boostCodeLoading, setBoostCodeLoading] = useState(false);
   const [boostCodeResult, setBoostCodeResult]   = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   /* ── General ── */
   const [error, setError]     = useState('');
@@ -324,21 +326,17 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   };
 
   /* ── Boost purchase ── */
-  const handleBoostPurchase = async () => {
+  const handleBoostPurchase = () => {
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Refresh user data after successful payment
     if (!token) return;
-    setBoostLoading(true);
     try {
-      const { url } = await api.createBoostCheckout(token);
-      if ((window as any).electronAPI?.openExternal) {
-        (window as any).electronAPI.openExternal(url);
-      } else {
-        window.open(url, '_blank');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to start purchase');
-    } finally {
-      setBoostLoading(false);
-    }
+      const me = await api.getMe(token);
+      setUser(me);
+    } catch {/* ignore */}
   };
 
   /* ── Boost redeem ── */
@@ -1164,6 +1162,15 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
           </div>
         </main>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && token && (
+        <PaymentModal
+          token={token}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 }

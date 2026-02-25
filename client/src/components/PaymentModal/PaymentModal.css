@@ -1,0 +1,492 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DMXGram Payment Modal — Custom Payment UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Overlay */
+.payment-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: payFadeIn 0.2s ease-out;
+}
+
+@keyframes payFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal container */
+.payment-modal {
+  background: var(--bg-secondary, #1e1f22);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 16px;
+  width: 520px;
+  max-width: 96vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: paySlideUp 0.25s ease-out;
+}
+
+@keyframes paySlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.payment-header {
+  padding: 24px 28px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.06));
+}
+
+.payment-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #f2f3f5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-header h2 svg {
+  color: #a855f7;
+}
+
+.payment-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #b5bac1);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.payment-close-btn:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.06));
+  color: var(--text-primary);
+}
+
+/* Body */
+.payment-body {
+  padding: 24px 28px 28px;
+}
+
+/* ── Step indicator ─────────────────────────────────────────────────── */
+.payment-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.payment-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg-modifier-hover, rgba(255,255,255,0.08));
+  transition: all 0.3s;
+}
+
+.payment-step-dot.active {
+  background: #a855f7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+  transform: scale(1.2);
+}
+
+.payment-step-dot.done {
+  background: #22c55e;
+}
+
+.payment-step-line {
+  width: 32px;
+  height: 2px;
+  background: var(--bg-modifier-hover, rgba(255,255,255,0.08));
+  border-radius: 1px;
+}
+
+.payment-step-line.done {
+  background: #22c55e;
+}
+
+/* ── Section Title ──────────────────────────────────────────────────── */
+.payment-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #b5bac1);
+  margin-bottom: 14px;
+}
+
+/* ── STEP 1: Plan selection ─────────────────────────────────────────── */
+.plan-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.plan-card {
+  flex: 1;
+  min-width: 130px;
+  padding: 20px 16px;
+  background: var(--bg-tertiary, #2b2d31);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  position: relative;
+}
+
+.plan-card:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.04));
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.plan-card.selected {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.plan-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f2f3f5);
+  margin-bottom: 8px;
+}
+
+.plan-card-price {
+  font-size: 24px;
+  font-weight: 800;
+  color: #a855f7;
+  margin-bottom: 4px;
+}
+
+.plan-card-per {
+  font-size: 11px;
+  color: var(--text-secondary, #b5bac1);
+}
+
+.plan-card-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── STEP 2: Payment method ─────────────────────────────────────────── */
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.method-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  background: var(--bg-tertiary, #2b2d31);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.method-card:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.04));
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.method-card.selected {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.method-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.method-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.method-icon.btc  { color: #f7931a; }
+.method-icon.ltc  { color: #bfbbbb; }
+.method-icon.eth  { color: #627eea; }
+.method-icon.usdt { color: #26a17b; }
+.method-icon.card { color: #6366f1; }
+.method-icon.paypal { color: #003087; }
+
+.method-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #f2f3f5);
+}
+
+/* ── STEP 3: Crypto payment details ─────────────────────────────────── */
+.crypto-pay-box {
+  background: var(--bg-tertiary, #2b2d31);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.crypto-amount-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.crypto-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: #a855f7;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.crypto-currency {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.crypto-address-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-primary, #111214);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.crypto-address-text {
+  flex: 1;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text-primary, #f2f3f5);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.crypto-copy-btn {
+  background: var(--accent-primary, #a855f7);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.crypto-copy-btn:hover {
+  filter: brightness(1.15);
+}
+
+.crypto-timer {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.crypto-timer strong {
+  color: #f59e0b;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.crypto-verify-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.crypto-verify-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.crypto-verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.crypto-status {
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.crypto-status.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.crypto-status.confirming {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.crypto-status.confirmed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+/* ── STEP 4: Success ────────────────────────────────────────────────── */
+.payment-success-box {
+  text-align: center;
+  padding: 24px;
+}
+
+.payment-success-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.payment-success-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #22c55e;
+  margin-bottom: 8px;
+}
+
+.payment-success-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Navigation buttons ─────────────────────────────────────────────── */
+.payment-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.payment-back-btn {
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  color: var(--text-secondary, #b5bac1);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.payment-back-btn:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.04));
+  color: var(--text-primary);
+}
+
+.payment-next-btn {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: white;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.payment-next-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.payment-next-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Info note ──────────────────────────────────────────────────────── */
+.payment-note {
+  font-size: 11px;
+  color: var(--text-secondary, #b5bac1);
+  text-align: center;
+  margin-top: 16px;
+  opacity: 0.7;
+}
+
+/* ── Price summary ──────────────────────────────────────────────────── */
+.payment-summary {
+  background: var(--bg-tertiary, #2b2d31);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-summary-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.payment-summary-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #a855f7;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+.payment-modal::-webkit-scrollbar { width: 4px; }
+.payment-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }

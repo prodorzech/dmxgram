@@ -466,6 +466,48 @@ export const api = {
     return res.json();
   },
 
+  // ── Payment system ──
+  async getPaymentPlans(): Promise<{ plans: Record<string, { label: string; days: number; priceUsd: number }>; methods: string[] }> {
+    const res = await fetch(`${API_URL}/api/payments/plans`);
+    if (!res.ok) throw new Error('Failed to fetch plans');
+    return res.json();
+  },
+
+  async createPayment(plan: string, method: string, token: string): Promise<any> {
+    const res = await fetch(`${API_URL}/api/payments/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ plan, method }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Payment failed');
+    return data;
+  },
+
+  async getPaymentStatus(paymentId: string, token: string): Promise<any> {
+    const res = await fetch(`${API_URL}/api/payments/status/${paymentId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to check status');
+    return res.json();
+  },
+
+  async verifyCryptoPayment(paymentId: string, token: string): Promise<any> {
+    const res = await fetch(`${API_URL}/api/payments/verify-crypto/${paymentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    return res.json();
+  },
+
+  async getPaymentHistory(token: string): Promise<any[]> {
+    const res = await fetch(`${API_URL}/api/payments/history`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch history');
+    return res.json();
+  },
+
   async createBoostCheckout(token: string): Promise<{ url: string }> {
     const res = await fetch(`${API_URL}/api/payments/create-checkout`, {
       method: 'POST',
