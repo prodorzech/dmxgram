@@ -124,6 +124,27 @@ function App() {
               body: i18n.t('user.notifFriendRequest', { username: request.senderUsername }),
             });
           });
+
+          // Incoming call handler — registered HERE for maximum reliability
+          // (socket just connected, guaranteed to work)
+          socketService.on('call:offer', (data: any) => {
+            console.log('[DMXGram] call:offer received from', data.callerId);
+            const state = useStore.getState();
+            if (state.callState !== 'idle') {
+              console.log('[DMXGram] Already in call, sending busy');
+              socketService.emit('call:busy', { targetUserId: data.callerId });
+              return;
+            }
+            // Store the offer for CallOverlay to process
+            state.setPendingCallOffer(data);
+            // Show incoming call UI
+            state.receiveIncomingCall({
+              peerId: data.callerId,
+              peerUsername: data.callerInfo.username,
+              peerAvatar: data.callerInfo.avatar,
+              callType: data.callType
+            });
+          });
         } catch (socketErr) {
           console.error('Socket connect error (non-fatal):', socketErr);
         }
@@ -143,6 +164,7 @@ function App() {
       socketService.off('user:updated');
       socketService.off('dm:new');
       socketService.off('friend:request');
+      socketService.off('call:offer');
       socketService.disconnect();
     };
   }, [isAuthenticated, token]);

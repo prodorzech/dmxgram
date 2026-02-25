@@ -60,12 +60,15 @@ interface AppState {
   // Calls
   callState: CallState;
   callInfo: CallInfo | null;
+  pendingCallOffer: any;
   setCallState: (state: CallState) => void;
   setCallInfo: (info: CallInfo | null) => void;
   startOutgoingCall: (info: CallInfo) => void;
   receiveIncomingCall: (info: CallInfo) => void;
   callConnected: () => void;
   endCall: () => void;
+  setPendingCallOffer: (data: any) => void;
+  clearPendingCallOffer: () => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -172,10 +175,13 @@ export const useStore = create<AppState>((set) => ({
   // Calls
   callState: 'idle',
   callInfo: null,
+  pendingCallOffer: null,
   setCallState: (callState) => set({ callState }),
   setCallInfo: (callInfo) => set({ callInfo }),
   startOutgoingCall: (info) => set({ callState: 'outgoing', callInfo: info }),
   receiveIncomingCall: (info) => set({ callState: 'incoming', callInfo: info }),
   callConnected: () => set({ callState: 'connected' }),
-  endCall: () => set({ callState: 'idle', callInfo: null }),
+  endCall: () => set({ callState: 'idle', callInfo: null, pendingCallOffer: null }),
+  setPendingCallOffer: (data) => set({ pendingCallOffer: data }),
+  clearPendingCallOffer: () => set({ pendingCallOffer: null }),
 }));

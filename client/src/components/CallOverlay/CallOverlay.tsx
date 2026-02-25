@@ -25,7 +25,12 @@ const fmtTime = (s: number) => {
 
 export function CallOverlay() {
   const { t } = useTranslation();
-  const { user, callState, callInfo, callConnected, endCall } = useStore();
+  const { user, callState, callInfo, callConnected, endCall, pendingCallOffer, clearPendingCallOffer } = useStore();
+
+  // Debug: trace callState changes
+  useEffect(() => {
+    console.log('[CallOverlay] callState =', callState, callInfo ? `peer=${callInfo.peerId}` : '(no callInfo)');
+  }, [callState, callInfo]);
 
   /* ── Refs ── */
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -233,6 +238,7 @@ export function CallOverlay() {
   /* ── Start outgoing call ── */
   const startCall = useCallback(async () => {
     if (!callInfo || !user) return;
+    console.log('[CallOverlay] startCall: peerId=', callInfo.peerId, 'type=', callInfo.callType);
     try {
       const stream = await getUserMedia(callInfo.callType === 'video');
       localStreamRef.current = stream;
@@ -453,32 +459,7 @@ export function CallOverlay() {
      SOCKET EVENT LISTENERS
      ══════════════════════════════════════════════════════════════════════ */
   useEffect(() => {
-    const handleOffer = async (data: { callerId: string; callerInfo: any; offer: RTCSessionDescriptionInit; callType: 'voice' | 'video' }) => {
-      const state = useStore.getState();
-
-      // If already in a call, send busy
-      if (state.callState !== 'idle' && state.callState !== 'incoming') {
-        socketService.emit('call:busy', { targetUserId: data.callerId });
-        return;
-      }
-
-      try {
-        // Store the offer — we'll use it when acceptCall is triggered
-        const pc = createPeerConnection();
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-      } catch (err) {
-        console.error('Error setting up incoming call PC:', err);
-      }
-
-      // Always show the incoming call UI regardless of PC errors
-      // Ringtone is handled by the callState useEffect
-      useStore.getState().receiveIncomingCall({
-        peerId: data.callerId,
-        peerUsername: data.callerInfo.username,
-        peerAvatar: data.callerInfo.avatar,
-        callType: data.callType
-      });
-    };
+    console.log('[CallOverlay] Registering socket listeners (answer, ice, hangup, reject, busy, renegotiate)');
 
     const handleAnswer = async (data: { answererId: string; answer: RTCSessionDescriptionInit }) => {
       const pc = pcRef.current;
@@ -546,7 +527,6 @@ export function CallOverlay() {
       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     };
 
-    socketService.on('call:offer', handleOffer);
     socketService.on('call:answer', handleAnswer);
     socketService.on('call:ice-candidate', handleIceCandidate);
     socketService.on('call:hangup', handleHangupEvent);
@@ -556,7 +536,6 @@ export function CallOverlay() {
     socketService.on('call:renegotiate-answer', handleRenegotiateAnswer);
 
     return () => {
-      socketService.off('call:offer', handleOffer);
       socketService.off('call:answer', handleAnswer);
       socketService.off('call:ice-candidate', handleIceCandidate);
       socketService.off('call:hangup', handleHangupEvent);
@@ -566,19 +545,37 @@ export function CallOverlay() {
       socketService.off('call:renegotiate-answer', handleRenegotiateAnswer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createPeerConnection, cleanup, endCall, callConnected, sendCallSystemMessage]);
+  }, [cleanup, endCall, callConnected, sendCallSystemMessage]);
 
   /* ── Start the outgoing call once state is set ── */
   useEffect(() => {
     if (callState === 'outgoing' && callInfo && !pcRef.current) {
+      console.log('[CallOverlay] Triggering startCall for outgoing call');
       startCall();
     }
   }, [callState, callInfo, startCall]);
+
+  /* ── Process pending offer from App-level call:offer listener ── */
+  useEffect(() => {
+    if (!pendingCallOffer || callState !== 'incoming') return;
+    console.log('[CallOverlay] Processing pending call offer from', pendingCallOffer.callerId);
+    try {
+      const pc = createPeerConnection();
+      pc.setRemoteDescription(new RTCSessionDescription(pendingCallOffer.offer))
+        .then(() => console.log('[CallOverlay] Remote description set successfully'))
+        .catch((err: any) => console.error('[CallOverlay] setRemoteDescription error:', err));
+    } catch (err) {
+      console.error('[CallOverlay] createPeerConnection error:', err);
+    }
+    clearPendingCallOffer();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCallOffer, callState]);
 
   /* ── When accepting: create answer ── */
   const handleAccept = useCallback(async () => {
     const pc = pcRef.current;
     if (!pc || !callInfo) return;
+    console.log('[CallOverlay] handleAccept: peerId=', callInfo.peerId);
 
     // Ringtone is stopped by callState useEffect when state becomes 'connected'
 
@@ -647,22 +644,11 @@ export function CallOverlay() {
      RENDER
      ══════════════════════════════════════════════════════════════════════ */
 
-  // Always render audio elements so refs are never null
-  const audioElements = (
-    <>
-      <audio ref={remoteAudioRef} autoPlay style={{ display: 'none' }} />
-      <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" style={{ display: 'none' }} />
-    </>
-  );
-
-  if (callState === 'idle' || !callInfo) return audioElements;
-
-  const peerAvatar = callInfo.peerAvatar ? getImageUrl(callInfo.peerAvatar) : null;
+  const peerAvatar = callInfo?.peerAvatar ? getImageUrl(callInfo.peerAvatar) : null;
   const myAvatar = user?.avatar ? getImageUrl(user.avatar) : null;
 
-  return (
+  const overlay = callState !== 'idle' && callInfo ? (
     <div className={`call-overlay ${callState}`}>
-      {audioElements}
 
       {/* ── RINGING / OUTGOING ── */}
       {(callState === 'outgoing' || callState === 'incoming') && (
@@ -817,5 +803,14 @@ export function CallOverlay() {
         </div>
       )}
     </div>
+  ) : null;
+
+  return (
+    <>
+      {/* Audio elements — always at FIXED tree position, never remounted */}
+      <audio ref={remoteAudioRef} autoPlay style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+      <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+      {overlay}
+    </>
   );
 }

@@ -9,7 +9,6 @@
   left: 0;
   right: 0;
   z-index: 100000;
-  animation: callSlideDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .call-overlay.outgoing,
@@ -20,7 +19,6 @@
 
 .call-overlay.connected {
   height: calc(100vh - var(--titlebar-height, 0px));
-  animation: callExpandFull 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes callSlideDown {
