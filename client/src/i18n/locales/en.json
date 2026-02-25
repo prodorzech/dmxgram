@@ -456,6 +456,10 @@
     "cameraOn": "Turn On Camera",
     "cameraOff": "Turn Off Camera",
     "screenShare": "Share Screen",
-    "stopScreenShare": "Stop Sharing"
+    "stopScreenShare": "Stop Sharing",
+    "missedCallOutgoing": "Missed call to {{name}}",
+    "missedCallIncoming": "Missed call from {{name}}",
+    "callEnded": "Call lasted {{duration}}",
+    "callback": "Call Back"
   }
 }

@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic, Play, Pause, Phone, Video } from 'lucide-react';
+import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic, Play, Pause, Phone, PhoneOff, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { useUI } from '../../context/UIContext';
@@ -195,7 +195,13 @@ export const DMChat: React.FC = () => {
   const MEDIA_PREFIX = '__DMX_MEDIA__:';
   const REPLY_PREFIX = '__DMX_REPLY__:';
   const FORWARD_PREFIX = '__DMX_FORWARD__:';
+  const CALL_PREFIX = '__DMX_CALL__:';
   const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮'];
+
+  const parseCallMessage = (content: string): { type: 'missed' | 'ended'; callType: 'voice' | 'video'; duration?: number; peerId: string; peerUsername: string } | null => {
+    if (!content.startsWith(CALL_PREFIX)) return null;
+    try { return JSON.parse(content.slice(CALL_PREFIX.length)); } catch { return null; }
+  };
 
   const parseMessage = (content: string): {
     text: string;
@@ -892,6 +898,54 @@ export const DMChat: React.FC = () => {
               const senderStatus: 'online' | 'offline' | 'away' = isOwn ? (user?.status as any || 'online') : (currentFriend?.status || 'offline');
               const senderBadges = isOwn ? user?.badges : currentFriend?.badges;
               const senderBanner = isOwn ? user?.banner : currentFriend?.banner;
+
+              // ── Call system message ──
+              const callData = parseCallMessage(dm.content);
+              if (callData) {
+                const isMissed = callData.type === 'missed';
+                const isVideoCall = callData.callType === 'video';
+                const fmtDuration = (s: number) => {
+                  const m = Math.floor(s / 60);
+                  const sec = Math.floor(s % 60);
+                  return `${m}:${sec.toString().padStart(2, '0')}`;
+                };
+                return (
+                  <div key={dm.id} className={`call-system-message ${isMissed ? 'missed' : 'ended'}`}>
+                    <div className="call-system-icon">
+                      {isMissed ? <PhoneOff size={18} /> : (isVideoCall ? <Video size={18} /> : <Phone size={18} />)}
+                    </div>
+                    <div className="call-system-info">
+                      <span className="call-system-text">
+                        {isMissed
+                          ? (isOwn
+                              ? t('call.missedCallOutgoing', { name: callData.peerUsername })
+                              : t('call.missedCallIncoming', { name: dm.senderUsername }))
+                          : t('call.callEnded', { duration: fmtDuration(callData.duration || 0) })
+                        }
+                      </span>
+                      <span className="call-system-time">
+                        {new Date(dm.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {isMissed && !isOwn && (
+                      <button
+                        className="call-system-callback-btn"
+                        onClick={() => startOutgoingCall({
+                          peerId: dm.senderId,
+                          peerUsername: dm.senderUsername,
+                          peerAvatar: dm.senderAvatar,
+                          callType: callData.callType
+                        })}
+                        disabled={callState !== 'idle'}
+                        title={t('call.callback')}
+                      >
+                        <Phone size={16} />
+                        <span>{t('call.callback')}</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              }
 
               return (
                 <div

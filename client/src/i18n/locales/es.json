@@ -452,7 +452,11 @@
     "cameraOn": "Activar cámara",
     "cameraOff": "Desactivar cámara",
     "screenShare": "Compartir pantalla",
-    "stopScreenShare": "Dejar de compartir"
+    "stopScreenShare": "Dejar de compartir",
+    "missedCallOutgoing": "Llamada perdida a {{name}}",
+    "missedCallIncoming": "Llamada perdida de {{name}}",
+    "callEnded": "La llamada duró {{duration}}",
+    "callback": "Devolver llamada"
   },
   "dialog": {
     "confirm": "Confirmar",

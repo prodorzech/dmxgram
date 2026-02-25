@@ -456,6 +456,10 @@
     "cameraOn": "Kamera einschalten",
     "cameraOff": "Kamera ausschalten",
     "screenShare": "Bildschirm teilen",
-    "stopScreenShare": "Teilen beenden"
+    "stopScreenShare": "Teilen beenden",
+    "missedCallOutgoing": "Verpasster Anruf an {{name}}",
+    "missedCallIncoming": "Verpasster Anruf von {{name}}",
+    "callEnded": "Anruf dauerte {{duration}}",
+    "callback": "Zurückrufen"
   }
 }

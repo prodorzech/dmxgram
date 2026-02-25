@@ -37,6 +37,8 @@ export function CallOverlay() {
   const iceCandidateQueue = useRef<RTCIceCandidateInit[]>([]);
   const callTimerRef = useRef<number>(0);
   const ringTimeoutRef = useRef<number>(0);
+  const callDurationRef = useRef<number>(0);
+  const systemMessageSentRef = useRef(false);
 
   /* ── State ── */
   const [isMuted, setIsMuted] = useState(false);
@@ -50,6 +52,24 @@ export function CallOverlay() {
   /* ── Audio analysers for speaking detection ── */
   const localAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; anim: number } | null>(null);
   const remoteAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; anim: number } | null>(null);
+
+  /* ── Send call system message to chat ── */
+  const sendCallSystemMessage = useCallback((type: 'missed' | 'ended', duration?: number) => {
+    const info = useStore.getState().callInfo;
+    if (systemMessageSentRef.current || !info) return;
+    systemMessageSentRef.current = true;
+    const payload = JSON.stringify({
+      type,
+      callType: info.callType,
+      duration,
+      peerId: info.peerId,
+      peerUsername: info.peerUsername
+    });
+    socketService.emit('dm:send', {
+      friendId: info.peerId,
+      content: `__DMX_CALL__:${payload}`
+    });
+  }, []);
 
   /* ── Cleanup helper ── */
   const cleanup = useCallback(() => {
@@ -78,6 +98,8 @@ export function CallOverlay() {
     }
 
     iceCandidateQueue.current = [];
+    callDurationRef.current = 0;
+    systemMessageSentRef.current = false;
     setIsMuted(false);
     setIsCameraOn(false);
     setIsScreenSharing(false);
@@ -219,6 +241,7 @@ export function CallOverlay() {
       // Ring timeout — 45 seconds
       ringTimeoutRef.current = window.setTimeout(() => {
         if (useStore.getState().callState === 'outgoing') {
+          sendCallSystemMessage('missed');
           socketService.emit('call:hangup', { targetUserId: callInfo.peerId });
           cleanup();
           endCall();
@@ -244,12 +267,18 @@ export function CallOverlay() {
 
   /* ── Hang up ── */
   const handleHangup = useCallback(() => {
+    const state = useStore.getState().callState;
+    if (state === 'connected') {
+      sendCallSystemMessage('ended', callDurationRef.current);
+    } else if (state === 'outgoing') {
+      sendCallSystemMessage('missed');
+    }
     if (callInfo) {
       socketService.emit('call:hangup', { targetUserId: callInfo.peerId });
     }
     cleanup();
     endCall();
-  }, [callInfo, cleanup, endCall]);
+  }, [callInfo, cleanup, endCall, sendCallSystemMessage]);
 
   /* ── Toggle mic ── */
   const toggleMute = useCallback(() => {
@@ -430,7 +459,10 @@ export function CallOverlay() {
 
       // Start timer
       callTimerRef.current = window.setInterval(() => {
-        setCallDuration(prev => prev + 1);
+        setCallDuration(prev => {
+          callDurationRef.current = prev + 1;
+          return prev + 1;
+        });
       }, 1000);
     };
 
@@ -444,11 +476,16 @@ export function CallOverlay() {
     };
 
     const handleHangupEvent = () => {
+      // Peer hung up — if we were connected, they already sent the system message
+      // If we were ringing (incoming), this is a missed call from our perspective
+      // but the caller already sent the missed message on their timeout/cancel
       cleanup();
       endCall();
     };
 
     const handleReject = () => {
+      // Callee rejected our call — send missed call message
+      sendCallSystemMessage('missed');
       cleanup();
       endCall();
     };
@@ -496,7 +533,7 @@ export function CallOverlay() {
       socketService.off('call:renegotiate-answer', handleRenegotiateAnswer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createPeerConnection, cleanup, endCall, callConnected]);
+  }, [createPeerConnection, cleanup, endCall, callConnected, sendCallSystemMessage]);
 
   /* ── Start the outgoing call once state is set ── */
   useEffect(() => {
@@ -540,7 +577,10 @@ export function CallOverlay() {
 
       // Start timer
       callTimerRef.current = window.setInterval(() => {
-        setCallDuration(prev => prev + 1);
+        setCallDuration(prev => {
+          callDurationRef.current = prev + 1;
+          return prev + 1;
+        });
       }, 1000);
     } catch (err) {
       console.error('Failed to accept:', err);

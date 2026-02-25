@@ -456,6 +456,10 @@
     "cameraOn": "Włącz kamerę",
     "cameraOff": "Wyłącz kamerę",
     "screenShare": "Udostępnij ekran",
-    "stopScreenShare": "Zatrzymaj udostępnianie"
+    "stopScreenShare": "Zatrzymaj udostępnianie",
+    "missedCallOutgoing": "Nieodebrane połączenie do {{name}}",
+    "missedCallIncoming": "Nieodebrane połączenie od {{name}}",
+    "callEnded": "Rozmowa trwała {{duration}}",
+    "callback": "Oddzwoń"
   }
 }
