@@ -40,6 +40,10 @@ export function CallOverlay() {
   const callDurationRef = useRef<number>(0);
   const systemMessageSentRef = useRef(false);
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+  const callInfoRef = useRef(callInfo);
+
+  // Keep callInfoRef in sync — used by onicecandidate to avoid stale closures
+  useEffect(() => { callInfoRef.current = callInfo; }, [callInfo]);
 
   /* ── State ── */
   const [isMuted, setIsMuted] = useState(false);
@@ -143,9 +147,11 @@ export function CallOverlay() {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     pc.onicecandidate = (e) => {
-      if (e.candidate && callInfo) {
+      // Use ref to always get the latest callInfo (avoids stale closure)
+      const info = callInfoRef.current || useStore.getState().callInfo;
+      if (e.candidate && info) {
         socketService.emit('call:ice-candidate', {
-          targetUserId: callInfo.peerId,
+          targetUserId: info.peerId,
           candidate: e.candidate.toJSON()
         });
       }
@@ -182,14 +188,24 @@ export function CallOverlay() {
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        handleHangup();
+        // Use store directly to avoid stale closure
+        const st = useStore.getState();
+        const info = st.callInfo;
+        if (st.callState === 'connected') {
+          sendCallSystemMessage('ended', callDurationRef.current);
+        } else if (st.callState === 'outgoing') {
+          sendCallSystemMessage('missed');
+        }
+        if (info) socketService.emit('call:hangup', { targetUserId: info.peerId });
+        cleanup();
+        st.endCall();
       }
     };
 
     pcRef.current = pc;
     return pc;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callInfo, setupSpeakingDetection]);
+  }, [setupSpeakingDetection, cleanup, sendCallSystemMessage]);
 
   /* ── Get user media with saved device prefs ── */
   const getUserMedia = useCallback(async (withVideo: boolean) => {
@@ -450,10 +466,15 @@ export function CallOverlay() {
         return;
       }
 
-      // Store the offer — we'll use it when acceptCall is triggered
-      const pc = createPeerConnection();
-      await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+      try {
+        // Store the offer — we'll use it when acceptCall is triggered
+        const pc = createPeerConnection();
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+      } catch (err) {
+        console.error('Error setting up incoming call PC:', err);
+      }
 
+      // Always show the incoming call UI regardless of PC errors
       useStore.getState().receiveIncomingCall({
         peerId: data.callerId,
         peerUsername: data.callerInfo.username,
@@ -572,6 +593,12 @@ export function CallOverlay() {
   const handleAccept = useCallback(async () => {
     const pc = pcRef.current;
     if (!pc || !callInfo) return;
+
+    // Stop ringtone immediately
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
 
     try {
       const stream = await getUserMedia(callInfo.callType === 'video');
