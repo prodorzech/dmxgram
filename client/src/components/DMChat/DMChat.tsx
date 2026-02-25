@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic } from 'lucide-react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic, Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { useUI } from '../../context/UIContext';
@@ -15,6 +15,114 @@ import { ForwardMessageModal } from '../ForwardMessageModal/ForwardMessageModal'
 import { getImageUrl } from '../../utils/imageUrl';
 import { DirectMessage, MessageAttachment } from '../../types';
 import './DMChat.css';
+
+/* ── Custom Voice Message Player ─────────────────────────────────────── */
+interface VoicePlayerProps {
+  src: string;
+  label: string;
+}
+function VoicePlayer({ src, label }: VoicePlayerProps) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [waveform] = useState<number[]>(() =>
+    Array.from({ length: 32 }, () => 0.2 + Math.random() * 0.8)
+  );
+  const animRef = useRef<number>(0);
+
+  const setupDevice = useCallback((el: HTMLAudioElement) => {
+    const outDev = localStorage.getItem('dmx-audio-output');
+    const outVol = parseInt(localStorage.getItem('dmx-output-volume') ?? '100', 10);
+    el.volume = Math.min(outVol / 100, 1);
+    if (outDev && outDev !== 'default' && typeof (el as any).setSinkId === 'function') {
+      (el as any).setSinkId(outDev).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const tick = useCallback(() => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      if (!audioRef.current.paused) {
+        animRef.current = requestAnimationFrame(tick);
+      }
+    }
+  }, []);
+
+  const togglePlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (el.paused) {
+      setupDevice(el);
+      el.play().catch(() => {});
+      setPlaying(true);
+      animRef.current = requestAnimationFrame(tick);
+    } else {
+      el.pause();
+      setPlaying(false);
+      cancelAnimationFrame(animRef.current);
+    }
+  };
+
+  const handleBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = audioRef.current;
+    if (!el || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    el.currentTime = pct * duration;
+    setCurrentTime(el.currentTime);
+  };
+
+  const progress = duration > 0 ? currentTime / duration : 0;
+
+  return (
+    <div className="voice-player">
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onLoadedMetadata={() => {
+          if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+            setupDevice(audioRef.current);
+          }
+        }}
+        onEnded={() => { setPlaying(false); setCurrentTime(0); cancelAnimationFrame(animRef.current); }}
+      />
+      <button type="button" className="voice-player-btn" onClick={togglePlay}>
+        {playing ? <Pause size={18} /> : <Play size={18} />}
+      </button>
+      <div className="voice-player-body">
+        <div className="voice-player-waveform" onClick={handleBarClick}>
+          {waveform.map((h, i) => {
+            const filled = i / waveform.length <= progress;
+            return (
+              <div key={i} className={`voice-bar${filled ? ' filled' : ''}`}
+                style={{ height: `${h * 100}%` }} />
+            );
+          })}
+        </div>
+        <div className="voice-player-info">
+          <Mic size={12} className="voice-player-mic" />
+          <span className="voice-player-label">{label}</span>
+          <span className="voice-player-time">
+            {playing || currentTime > 0 ? formatTime(currentTime) : formatTime(duration)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface ContextMenu {
   x: number;
@@ -827,26 +935,11 @@ export const DMChat: React.FC = () => {
                                 <div className={`msg-attachments${parsed.attachments.length === 1 ? ' single' : ''}`}>
                                   {parsed.attachments.map((att, ai) => (
                                     att.mimetype.startsWith('audio/') ? (
-                                      <div key={ai} className="msg-voice-player">
-                                        <Mic size={16} className="msg-voice-icon" />
-                                        <span className="msg-voice-label">{t('chat.voiceNote')}</span>
-                                        <audio
-                                          src={getImageUrl(att.url)}
-                                          controls
-                                          preload="metadata"
-                                          className="msg-audio"
-                                          ref={(el) => {
-                                            if (el) {
-                                              const outDev = localStorage.getItem('dmx-audio-output');
-                                              const outVol = parseInt(localStorage.getItem('dmx-output-volume') ?? '100', 10);
-                                              el.volume = Math.min(outVol / 100, 1);
-                                              if (outDev && outDev !== 'default' && typeof (el as any).setSinkId === 'function') {
-                                                (el as any).setSinkId(outDev).catch(() => {});
-                                              }
-                                            }
-                                          }}
-                                        />
-                                      </div>
+                                      <VoicePlayer
+                                        key={ai}
+                                        src={getImageUrl(att.url)}
+                                        label={t('chat.voiceNote')}
+                                      />
                                     ) : att.mimetype.startsWith('video/') ? (
                                       <div key={ai} className="msg-media-item msg-video-item" onClick={() => openLightbox(parsed.attachments, ai)}>
                                         <video

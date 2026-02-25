@@ -781,6 +781,102 @@
 }
 
 /* ── Voice message player in messages ─────────────────────────────────────── */
+/* ── Custom Voice Player ──────────────────────────────────────────────── */
+.voice-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  min-width: 260px;
+  max-width: 380px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.15s;
+}
+.voice-player:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.voice-player-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+.voice-player-btn:hover {
+  background: var(--accent-hover);
+  transform: scale(1.06);
+}
+.voice-player-btn:active {
+  transform: scale(0.96);
+}
+.voice-player-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voice-player-waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.voice-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.12s;
+}
+.voice-bar.filled {
+  background: var(--accent-primary);
+}
+.voice-player-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.voice-player-mic {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+.voice-player-label {
+  font-size: 11px;
+  color: var(--text-secondary, #949ba4);
+  white-space: nowrap;
+}
+.voice-player-time {
+  font-size: 11px;
+  color: var(--text-muted, #72767d);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light theme */
+[data-theme="light"] .voice-player {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .voice-player:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .voice-bar {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Legacy selectors (kept for backwards compat) */
 .msg-voice-player {
   display: flex;
   align-items: center;

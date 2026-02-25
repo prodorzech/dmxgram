@@ -5,12 +5,60 @@ import { api } from '../../services/api';
 import {
   X, User as UserIcon, Upload, Moon, Sun, Globe, Layers, Bell,
   Palette, ImageOff, CheckCircle2, Ban, Shield, Calendar, Mail, Rocket, Lock,
-  Mic, Volume2, LogOut, Key
+  Mic, Volume2, LogOut, Key, ChevronDown, Check
 } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
 import { useTranslation } from 'react-i18next';
 import './UserSettingsModal.css';
+
+/* ── Custom Dropdown component ───────────────────────────────────────── */
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+interface CustomDropdownProps {
+  options: DropdownOption[];
+  value: string;
+  onChange: (value: string) => void;
+  icon?: React.ReactNode;
+}
+function CustomDropdown({ options, value, onChange, icon }: CustomDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selectedLabel = options.find(o => o.value === value)?.label || value;
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div className={`custom-dropdown${open ? ' open' : ''}`} ref={ref}>
+      <button type="button" className="custom-dropdown-trigger" onClick={() => setOpen(!open)}>
+        {icon && <span className="custom-dropdown-icon">{icon}</span>}
+        <span className="custom-dropdown-label">{selectedLabel}</span>
+        <ChevronDown size={16} className={`custom-dropdown-chevron${open ? ' rotated' : ''}`} />
+      </button>
+      {open && (
+        <div className="custom-dropdown-menu">
+          {options.map(opt => (
+            <button type="button" key={opt.value}
+              className={`custom-dropdown-item${opt.value === value ? ' selected' : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false); }}>
+              <span>{opt.label}</span>
+              {opt.value === value && <Check size={14} className="custom-dropdown-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Accent colours palette ──────────────────────────────────────────── */
 const ACCENT_COLORS = [
@@ -694,15 +742,18 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 <div className="settings-group">
                   <h4 className="settings-group-title">{t('settings.inputDevice')}</h4>
                   <p className="settings-group-desc">{t('settings.inputDeviceDesc')}</p>
-                  <select className="settings-select" value={selectedInputDevice}
-                    onChange={e => handleInputDeviceChange(e.target.value)}>
-                    <option value="default">{t('settings.defaultDevice')}</option>
-                    {audioInputDevices.map(d => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `${t('settings.microphone')} (${d.deviceId.slice(0, 8)})`}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    icon={<Mic size={16} />}
+                    value={selectedInputDevice}
+                    onChange={handleInputDeviceChange}
+                    options={[
+                      { value: 'default', label: t('settings.defaultDevice') },
+                      ...audioInputDevices.map(d => ({
+                        value: d.deviceId,
+                        label: d.label || `${t('settings.microphone')} (${d.deviceId.slice(0, 8)})`
+                      }))
+                    ]}
+                  />
                 </div>
 
                 {/* Input volume */}
@@ -738,15 +789,18 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 <div className="settings-group">
                   <h4 className="settings-group-title">{t('settings.outputDevice')}</h4>
                   <p className="settings-group-desc">{t('settings.outputDeviceDesc')}</p>
-                  <select className="settings-select" value={selectedOutputDevice}
-                    onChange={e => handleOutputDeviceChange(e.target.value)}>
-                    <option value="default">{t('settings.defaultDevice')}</option>
-                    {audioOutputDevices.map(d => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `${t('settings.speaker')} (${d.deviceId.slice(0, 8)})`}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    icon={<Volume2 size={16} />}
+                    value={selectedOutputDevice}
+                    onChange={handleOutputDeviceChange}
+                    options={[
+                      { value: 'default', label: t('settings.defaultDevice') },
+                      ...audioOutputDevices.map(d => ({
+                        value: d.deviceId,
+                        label: d.label || `${t('settings.speaker')} (${d.deviceId.slice(0, 8)})`
+                      }))
+                    ]}
+                  />
                 </div>
 
                 {/* Output volume */}
