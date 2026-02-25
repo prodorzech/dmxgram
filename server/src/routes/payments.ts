@@ -12,9 +12,9 @@ const router: Router = express.Router();
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const PLANS: Record<string, { label: string; days: number; priceUsd: number }> = {
-  '1month':   { label: '1 Miesiąc',   days: 30,  priceUsd: 4.99 },
-  '3months':  { label: '3 Miesiące',  days: 90,  priceUsd: 12.99 },
-  '12months': { label: '12 Miesięcy', days: 365, priceUsd: 39.99 },
+  '1month':   { label: '1month',   days: 30,  priceUsd: 4.99 },
+  '3months':  { label: '3months',  days: 90,  priceUsd: 12.99 },
+  '12months': { label: '12months', days: 365, priceUsd: 39.99 },
 };
 
 // Your crypto wallet addresses — set via environment variables

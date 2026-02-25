@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './GradientColorPicker.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -212,6 +213,7 @@ interface GradientColorPickerProps {
 }
 
 export function GradientColorPicker({ colorTop, colorBottom, onChangeTop, onChangeBottom, disabled }: GradientColorPickerProps) {
+  const { t } = useTranslation();
   return (
     <div className={`gradient-picker${disabled ? ' disabled' : ''}`}>
       {/* Live gradient preview bar */}
@@ -221,8 +223,8 @@ export function GradientColorPicker({ colorTop, colorBottom, onChangeTop, onChan
       />
 
       <div className="gradient-picker-row">
-        <SingleColorPicker label="Góra (Top)" color={colorTop} onChange={onChangeTop} disabled={disabled} />
-        <SingleColorPicker label="Dół (Bottom)" color={colorBottom} onChange={onChangeBottom} disabled={disabled} />
+        <SingleColorPicker label={t('gradient.colorTop')} color={colorTop} onChange={onChangeTop} disabled={disabled} />
+        <SingleColorPicker label={t('gradient.colorBottom')} color={colorBottom} onChange={onChangeBottom} disabled={disabled} />
       </div>
     </div>
   );

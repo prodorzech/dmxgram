@@ -742,10 +742,10 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                 {/* Profile Gradient (boost-locked) */}
                 <div className={`settings-group${!user?.hasDmxBoost ? ' boost-locked-group' : ''}`}>
                   <h4 className="settings-group-title">
-                    Kolor profilu
+                    {t('gradient.profileColor')}
                     {!user?.hasDmxBoost && <span className="boost-badge"><Lock size={12} /> DMX Boost</span>}
                   </h4>
-                  <p className="settings-group-desc" style={{ marginBottom: 10 }}>Ustaw gradient kolorów na swoim profilu — jak na Discordzie.</p>
+                  <p className="settings-group-desc" style={{ marginBottom: 10 }}>{t('gradient.profileColorDesc')}</p>
                   <GradientColorPicker
                     colorTop={profileColorTop}
                     colorBottom={profileColorBottom}

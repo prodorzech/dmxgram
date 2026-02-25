@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
 import './PaymentModal.css';
 
@@ -55,7 +56,7 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   ltc: 'Litecoin',
   eth: 'Ethereum',
   usdt: 'USDT',
-  card: 'Karta',
+  card: 'Card',
   paypal: 'PayPal',
 };
 
@@ -63,6 +64,7 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
    COMPONENT
    ═══════════════════════════════════════════════════════════════════════════ */
 export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
+  const { t } = useTranslation();
   /* ── State ── */
   const [step, setStep] = useState<Step>('plan');
   const [plans, setPlans] = useState<Record<string, Plan>>({});
@@ -97,7 +99,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
         const keys = Object.keys(data.plans);
         if (keys.length > 0) setSelectedPlan(keys[0]);
       } catch {
-        setError('Nie udało się pobrać planów');
+        setError(t('payment.errorFetchPlans'));
       }
     })();
   }, []);
@@ -189,7 +191,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
         setStep('pay');
       }
     } catch (err: any) {
-      setError(err.message || 'Nie udało się utworzyć płatności');
+      setError(err.message || t('payment.errorCreatePayment'));
     } finally {
       setLoading(false);
     }
@@ -212,10 +214,10 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
       } else if (result.error) {
         setError(result.error);
       } else {
-        setError('Płatność jeszcze nie wykryta. Spróbuj ponownie za chwilę.');
+        setError(t('payment.errorNotDetected'));
       }
     } catch (err: any) {
-      setError(err.message || 'Weryfikacja nie powiodła się');
+      setError(err.message || t('payment.errorVerifyFailed'));
     } finally {
       setVerifying(false);
     }
@@ -301,11 +303,12 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
           {/* ════════════ STEP 1: Plan Selection ════════════ */}
           {step === 'plan' && (
             <>
-              <div className="payment-section-title">Wybierz plan</div>
+              <div className="payment-section-title">{t('payment.choosePlan')}</div>
               <div className="plan-grid">
                 {Object.entries(plans).map(([key, plan]) => {
                   const isPopular = key === '3months';
                   const perMonth = (plan.priceUsd / (plan.days / 30)).toFixed(2);
+                  const planKey = `payment.plan${key}` as const;
                   return (
                     <div
                       key={key}
@@ -313,9 +316,9 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                       onClick={() => setSelectedPlan(key)}
                     >
                       {isPopular && <span className="plan-card-badge">Popular</span>}
-                      <div className="plan-card-label">{plan.label}</div>
+                      <div className="plan-card-label">{t(planKey as any)}</div>
                       <div className="plan-card-price">${plan.priceUsd}</div>
-                      <div className="plan-card-per">${perMonth}/mies.</div>
+                      <div className="plan-card-per">${perMonth}{t('payment.perMonth')}</div>
                     </div>
                   );
                 })}
@@ -328,7 +331,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                   disabled={!selectedPlan}
                   onClick={goNext}
                 >
-                  Dalej →
+                  {t('payment.next')}
                 </button>
               </div>
             </>
@@ -347,7 +350,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                 </div>
               )}
 
-              <div className="payment-section-title">Metoda płatności</div>
+              <div className="payment-section-title">{t('payment.paymentMethod')}</div>
               <div className="method-grid">
                 {(['btc', 'ltc', 'eth', 'usdt', 'card', 'paypal'] as PaymentMethod[]).map((m) => {
                   const available = methods.includes(m);
@@ -358,7 +361,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                       onClick={() => available && setSelectedMethod(m)}
                     >
                       <MethodIcon method={m} />
-                      <span className="method-label">{METHOD_LABELS[m]}</span>
+                      <span className="method-label">{m === 'card' ? t('payment.card') : METHOD_LABELS[m]}</span>
                     </div>
                   );
                 })}
@@ -366,22 +369,22 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
 
               <div className="payment-nav">
                 <button className="payment-back-btn" onClick={goBack}>
-                  ← Wróć
+                  {t('payment.back')}
                 </button>
                 <button
                   className="payment-next-btn"
                   disabled={!selectedMethod || loading}
                   onClick={goNext}
                 >
-                  {loading ? 'Tworzenie...' : 'Zapłać →'}
+                  {loading ? t('payment.creating') : t('payment.pay')}
                 </button>
               </div>
 
               <div className="payment-note">
                 {selectedMethod && ['card', 'paypal'].includes(selectedMethod)
-                  ? 'Zostaniesz przekierowany do bezpiecznej strony płatności'
+                  ? t('payment.redirectNote')
                   : selectedMethod
-                    ? 'Otrzymasz adres portfela do wpłaty'
+                    ? t('payment.cryptoNote')
                     : ''}
               </div>
             </>
@@ -402,25 +405,25 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
               <div className="crypto-pay-box">
                 {/* Amount */}
                 <div className="crypto-amount-row">
-                  <span className="crypto-amount" onClick={handleCopyAmount} style={{ cursor: 'pointer' }} title="Kliknij aby skopiować">
+                  <span className="crypto-amount" onClick={handleCopyAmount} style={{ cursor: 'pointer' }} title={t('payment.clickToCopy')}>
                     {cryptoAmount}
                   </span>
                   <span className="crypto-currency">{cryptoCurrency}</span>
                 </div>
 
                 {/* Address */}
-                <div className="payment-section-title">Adres portfela</div>
+                <div className="payment-section-title">{t('payment.walletAddress')}</div>
                 <div className="crypto-address-box">
                   <span className="crypto-address-text">{cryptoAddress}</span>
                   <button className="crypto-copy-btn" onClick={handleCopyAddress}>
-                    {copied ? '✓ Ok' : 'Kopiuj'}
+                    {copied ? t('payment.copied') : t('payment.copy')}
                   </button>
                 </div>
 
                 {/* Timer */}
                 {cryptoStatus === 'pending' && (
                   <div className="crypto-timer">
-                    Czas na wpłatę: <strong>{timeLeft}</strong>
+                    {t('payment.timeLeft')}<strong>{timeLeft}</strong>
                   </div>
                 )}
 
@@ -434,10 +437,10 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                     {verifying ? (
                       <>
                         <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
-                        Weryfikacja...
+                        {t('payment.verifying')}
                       </>
                     ) : (
-                      <>🔍 Zweryfikuj płatność</>
+                      <>🔍 {t('payment.verifyPayment')}</>
                     )}
                   </button>
                 )}
@@ -445,17 +448,17 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
                 {/* Status indicator */}
                 {cryptoStatus === 'confirming' && (
                   <div className="crypto-status confirming">
-                    ⏳ Transakcja wykryta! Oczekiwanie na potwierdzenia...
+                    ⏳ {t('payment.statusConfirming')}
                   </div>
                 )}
                 {cryptoStatus === 'confirmed' && (
                   <div className="crypto-status confirmed">
-                    ✅ Płatność potwierdzona! Aktywowanie DMX Boost...
+                    ✅ {t('payment.statusConfirmed')}
                   </div>
                 )}
                 {cryptoStatus === 'expired' && (
                   <div className="crypto-status pending" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
-                    ⏰ Czas na wpłatę minął. Wróć i spróbuj ponownie.
+                    ⏰ {t('payment.statusExpired')}
                   </div>
                 )}
               </div>
@@ -464,14 +467,14 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
               {(cryptoStatus === 'pending' || cryptoStatus === 'expired') && (
                 <div className="payment-nav">
                   <button className="payment-back-btn" onClick={goBack}>
-                    ← Wróć
+                    {t('payment.back')}
                   </button>
                   <div />
                 </div>
               )}
 
               <div className="payment-note">
-                Wpłać dokładną kwotę na podany adres. Płatność zostanie automatycznie zweryfikowana.
+                {t('payment.cryptoPayNote')}
               </div>
             </>
           )}
@@ -481,18 +484,18 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
             <>
               <div className="payment-success-box">
                 <div className="payment-success-icon">🚀</div>
-                <div className="payment-success-title">DMX Boost Aktywny!</div>
+                <div className="payment-success-title">{t('payment.successTitle')}</div>
                 <div className="payment-success-desc">
-                  Twój DMX Boost został aktywowany na {currentPlan?.days || '?'} dni.
+                  {t('payment.successDesc', { days: currentPlan?.days || '?' })}
                   <br />
-                  Ciesz się wszystkimi funkcjami premium!
+                  {t('payment.successEnjoy')}
                 </div>
               </div>
 
               <div className="payment-nav">
                 <div />
                 <button className="payment-next-btn" onClick={onClose}>
-                  Zamknij
+                  {t('payment.close')}
                 </button>
               </div>
             </>
