@@ -186,7 +186,34 @@
     "customBgHint": "Wgraj obraz jako tło aplikacji (zapisywane lokalnie)",
     "clearCustomBg": "Usuń obraz",
     "reportUser": "Zgłoś użytkownika",
-    "spamWarning": "⏳ Wysyłasz za szybko! Poczekaj {{seconds}}s"
+    "spamWarning": "⏳ Wysyłasz za szybko! Poczekaj {{seconds}}s",
+    "saveSuccess": "Profil zapisany pomyślnie"
+  },
+  "settings": {
+    "catUser": "USTAWIENIA UŻYTKOWNIKA",
+    "catApp": "USTAWIENIA APLIKACJI",
+    "myAccount": "Moje konto",
+    "editProfile": "Edytuj profil",
+    "edit": "Edytuj",
+    "email": "Email",
+    "badges": "Odznaki",
+    "passwordSecurity": "Hasło i bezpieczeństwo",
+    "passwordDesc": "Zmień hasło, aby zabezpieczyć swoje konto.",
+    "changePassword": "Zmień hasło",
+    "profileBanner": "Baner profilu",
+    "voiceAudio": "Głos i dźwięk",
+    "inputDevice": "Urządzenie wejściowe",
+    "inputDeviceDesc": "Wybierz mikrofon do nagrywania wiadomości głosowych",
+    "outputDevice": "Urządzenie wyjściowe",
+    "outputDeviceDesc": "Wybierz głośnik lub słuchawki do odtwarzania dźwięku",
+    "defaultDevice": "Domyślne",
+    "microphone": "Mikrofon",
+    "speaker": "Głośnik",
+    "inputVolume": "Głośność wejścia",
+    "outputVolume": "Głośność wyjścia",
+    "micTest": "Test mikrofonu",
+    "startTest": "Zacznij test",
+    "stopTest": "Zatrzymaj test"
   },
   "profile": {
     "sendMessage": "Wyślij wiadomość",
@@ -286,7 +313,8 @@
     "redeemErrSchema": "Błąd konfiguracji serwera — uruchom migrację users_boost_migration.sql w Supabase",
     "gifAvatarRequiresBoost": "Animowany avatar (GIF) wymaga DMX Boost",
     "customBgRequiresBoost": "Własne tło wymaga DMX Boost",
-    "gifAvatarHint": "Animowane avatary (GIF) dostępne z DMX Boost"
+    "gifAvatarHint": "Animowane avatary (GIF) dostępne z DMX Boost",
+    "features": "Funkcje DMX Boost"
   },
   "dialog": {
     "confirm": "Potwierdź",

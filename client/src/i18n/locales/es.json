@@ -186,7 +186,34 @@
     "customBgHint": "Sube una imagen para usarla como fondo de la app (guardada localmente)",
     "clearCustomBg": "Eliminar imagen",
     "reportUser": "Reportar usuario",
-    "spamWarning": "⏳ ¡Envías demasiado rápido! Espera {{seconds}}s"
+    "spamWarning": "⏳ ¡Envías demasiado rápido! Espera {{seconds}}s",
+    "saveSuccess": "Perfil guardado con éxito"
+  },
+  "settings": {
+    "catUser": "AJUSTES DE USUARIO",
+    "catApp": "AJUSTES DE LA APP",
+    "myAccount": "Mi cuenta",
+    "editProfile": "Editar perfil",
+    "edit": "Editar",
+    "email": "Correo electrónico",
+    "badges": "Insignias",
+    "passwordSecurity": "Contraseña y seguridad",
+    "passwordDesc": "Cambia tu contraseña para proteger tu cuenta.",
+    "changePassword": "Cambiar contraseña",
+    "profileBanner": "Banner de perfil",
+    "voiceAudio": "Voz y audio",
+    "inputDevice": "Dispositivo de entrada",
+    "inputDeviceDesc": "Selecciona el micrófono para mensajes de voz",
+    "outputDevice": "Dispositivo de salida",
+    "outputDeviceDesc": "Selecciona altavoces o auriculares para la reproducción",
+    "defaultDevice": "Predeterminado",
+    "microphone": "Micrófono",
+    "speaker": "Altavoz",
+    "inputVolume": "Volumen de entrada",
+    "outputVolume": "Volumen de salida",
+    "micTest": "Prueba de micrófono",
+    "startTest": "Iniciar prueba",
+    "stopTest": "Detener prueba"
   },
   "profile": {
     "sendMessage": "Enviar mensaje",
@@ -408,7 +435,8 @@
     "redeemErrSchema": "Error de configuración del servidor — ejecuta users_boost_migration.sql en Supabase",
     "gifAvatarRequiresBoost": "El avatar animado (GIF) requiere DMX Boost",
     "customBgRequiresBoost": "El fondo personalizado requiere DMX Boost",
-    "gifAvatarHint": "Avatares animados (GIF) disponibles con DMX Boost"
+    "gifAvatarHint": "Avatares animados (GIF) disponibles con DMX Boost",
+    "features": "Funciones de DMX Boost"
   },
   "dialog": {
     "confirm": "Confirmar",

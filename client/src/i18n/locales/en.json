@@ -186,7 +186,34 @@
     "customBgHint": "Upload an image to use as your app background (stored locally)",
     "clearCustomBg": "Clear image",
     "reportUser": "Report user",
-    "spamWarning": "⏳ Sending too fast! Wait {{seconds}}s"
+    "spamWarning": "⏳ Sending too fast! Wait {{seconds}}s",
+    "saveSuccess": "Profile saved successfully"
+  },
+  "settings": {
+    "catUser": "USER SETTINGS",
+    "catApp": "APP SETTINGS",
+    "myAccount": "My Account",
+    "editProfile": "Edit Profile",
+    "edit": "Edit",
+    "email": "Email",
+    "badges": "Badges",
+    "passwordSecurity": "Password & Security",
+    "passwordDesc": "Change your password to secure your account.",
+    "changePassword": "Change Password",
+    "profileBanner": "Profile Banner",
+    "voiceAudio": "Voice & Audio",
+    "inputDevice": "Input Device",
+    "inputDeviceDesc": "Select the microphone for recording voice messages",
+    "outputDevice": "Output Device",
+    "outputDeviceDesc": "Select speakers or headphones for audio playback",
+    "defaultDevice": "Default",
+    "microphone": "Microphone",
+    "speaker": "Speaker",
+    "inputVolume": "Input Volume",
+    "outputVolume": "Output Volume",
+    "micTest": "Microphone Test",
+    "startTest": "Start Test",
+    "stopTest": "Stop Test"
   },
   "profile": {
     "sendMessage": "Send message",
@@ -412,6 +439,7 @@
     "redeemErrSchema": "Server config error — run users_boost_migration.sql in Supabase",
     "gifAvatarRequiresBoost": "Animated avatar (GIF) requires DMX Boost",
     "customBgRequiresBoost": "Custom background requires DMX Boost",
-    "gifAvatarHint": "Animated avatars (GIF) available with DMX Boost"
+    "gifAvatarHint": "Animated avatars (GIF) available with DMX Boost",
+    "features": "DMX Boost Features"
   }
 }

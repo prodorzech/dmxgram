@@ -186,7 +186,34 @@
     "customBgHint": "Bild als App-Hintergrund hochladen (lokal gespeichert)",
     "clearCustomBg": "Bild entfernen",
     "reportUser": "User melden",
-    "spamWarning": "⏳ Du sendest zu schnell! Warte {{seconds}}s"
+    "spamWarning": "⏳ Du sendest zu schnell! Warte {{seconds}}s",
+    "saveSuccess": "Profil erfolgreich gespeichert"
+  },
+  "settings": {
+    "catUser": "BENUTZEREINSTELLUNGEN",
+    "catApp": "APP-EINSTELLUNGEN",
+    "myAccount": "Mein Konto",
+    "editProfile": "Profil bearbeiten",
+    "edit": "Bearbeiten",
+    "email": "E-Mail",
+    "badges": "Abzeichen",
+    "passwordSecurity": "Passwort & Sicherheit",
+    "passwordDesc": "Ändere dein Passwort, um dein Konto zu schützen.",
+    "changePassword": "Passwort ändern",
+    "profileBanner": "Profilbanner",
+    "voiceAudio": "Sprache & Audio",
+    "inputDevice": "Eingabegerät",
+    "inputDeviceDesc": "Wähle das Mikrofon für Sprachnachrichten",
+    "outputDevice": "Ausgabegerät",
+    "outputDeviceDesc": "Wähle Lautsprecher oder Kopfhörer für die Audiowiedergabe",
+    "defaultDevice": "Standard",
+    "microphone": "Mikrofon",
+    "speaker": "Lautsprecher",
+    "inputVolume": "Eingabelautstärke",
+    "outputVolume": "Ausgabelautstärke",
+    "micTest": "Mikrofontest",
+    "startTest": "Test starten",
+    "stopTest": "Test stoppen"
   },
   "profile": {
     "sendMessage": "Nachricht senden",
@@ -286,7 +313,8 @@
     "redeemErrSchema": "Server-Konfigurationsfehler — users_boost_migration.sql in Supabase ausführen",
     "gifAvatarRequiresBoost": "Animierter Avatar (GIF) erfordert DMX Boost",
     "customBgRequiresBoost": "Benutzerdefinierter Hintergrund erfordert DMX Boost",
-    "gifAvatarHint": "Animierte Avatare (GIF) verfügbar mit DMX Boost"
+    "gifAvatarHint": "Animierte Avatare (GIF) verfügbar mit DMX Boost",
+    "features": "DMX Boost Funktionen"
   },
   "dialog": {
     "confirm": "Bestätigen",

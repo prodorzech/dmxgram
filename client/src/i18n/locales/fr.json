@@ -186,7 +186,34 @@
     "customBgHint": "Téléchargez une image pour l'utiliser comme arrière-plan (enregistrée localement)",
     "clearCustomBg": "Supprimer l'image",
     "reportUser": "Signaler l'utilisateur",
-    "spamWarning": "⏳ Vous envoyez trop vite ! Attendez {{seconds}}s"
+    "spamWarning": "⏳ Vous envoyez trop vite ! Attendez {{seconds}}s",
+    "saveSuccess": "Profil enregistré avec succès"
+  },
+  "settings": {
+    "catUser": "PARAMÈTRES UTILISATEUR",
+    "catApp": "PARAMÈTRES DE L'APPLICATION",
+    "myAccount": "Mon compte",
+    "editProfile": "Modifier le profil",
+    "edit": "Modifier",
+    "email": "E-mail",
+    "badges": "Badges",
+    "passwordSecurity": "Mot de passe et sécurité",
+    "passwordDesc": "Changez votre mot de passe pour sécuriser votre compte.",
+    "changePassword": "Changer le mot de passe",
+    "profileBanner": "Bannière de profil",
+    "voiceAudio": "Voix et audio",
+    "inputDevice": "Périphérique d'entrée",
+    "inputDeviceDesc": "Sélectionnez le microphone pour les messages vocaux",
+    "outputDevice": "Périphérique de sortie",
+    "outputDeviceDesc": "Sélectionnez les haut-parleurs ou les écouteurs",
+    "defaultDevice": "Par défaut",
+    "microphone": "Microphone",
+    "speaker": "Haut-parleur",
+    "inputVolume": "Volume d'entrée",
+    "outputVolume": "Volume de sortie",
+    "micTest": "Test du microphone",
+    "startTest": "Démarrer le test",
+    "stopTest": "Arrêter le test"
   },
   "profile": {
     "sendMessage": "Envoyer un message",
@@ -408,7 +435,8 @@
     "redeemErrSchema": "Erreur de configuration serveur — exécutez users_boost_migration.sql dans Supabase",
     "gifAvatarRequiresBoost": "L'avatar animé (GIF) nécessite DMX Boost",
     "customBgRequiresBoost": "Le fond personnalisé nécessite DMX Boost",
-    "gifAvatarHint": "Avatars animés (GIF) disponibles avec DMX Boost"
+    "gifAvatarHint": "Avatars animés (GIF) disponibles avec DMX Boost",
+    "features": "Fonctionnalités DMX Boost"
   },
   "dialog": {
     "confirm": "Confirmer",

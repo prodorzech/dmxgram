@@ -145,7 +145,13 @@ export const DMChat: React.FC = () => {
   // ── Voice recording helpers ────────────────────────────────────────────
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Use selected input device from settings if set
+      const savedInputDevice = localStorage.getItem('dmx-audio-input');
+      const audioConstraints: MediaStreamConstraints['audio'] =
+        savedInputDevice && savedInputDevice !== 'default'
+          ? { deviceId: { exact: savedInputDevice } }
+          : true;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       streamRef.current = stream;
 
       // Set up analyser for volume visualisation
@@ -829,6 +835,16 @@ export const DMChat: React.FC = () => {
                                           controls
                                           preload="metadata"
                                           className="msg-audio"
+                                          ref={(el) => {
+                                            if (el) {
+                                              const outDev = localStorage.getItem('dmx-audio-output');
+                                              const outVol = parseInt(localStorage.getItem('dmx-output-volume') ?? '100', 10);
+                                              el.volume = Math.min(outVol / 100, 1);
+                                              if (outDev && outDev !== 'default' && typeof (el as any).setSinkId === 'function') {
+                                                (el as any).setSinkId(outDev).catch(() => {});
+                                              }
+                                            }
+                                          }}
                                         />
                                       </div>
                                     ) : att.mimetype.startsWith('video/') ? (
