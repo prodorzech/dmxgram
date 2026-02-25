@@ -155,10 +155,15 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
 
   /* ── Keyboard: Escape to close ── */
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showPaymentModal) { setShowPaymentModal(false); return; }
+        onClose();
+      }
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, showPaymentModal]);
 
   /* ── Load audio devices when Voice tab is shown ── */
   useEffect(() => {

@@ -255,7 +255,7 @@ export function PaymentModal({ token, onClose, onSuccess }: PaymentModalProps) {
 
   /* ═══════════════════════════════════════════════════════════════════════ */
   return (
-    <div className="payment-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="payment-overlay" onClick={e => { e.stopPropagation(); if (e.target === e.currentTarget) onClose(); }}>
       <div className="payment-modal">
         {/* Header */}
         <div className="payment-header">
