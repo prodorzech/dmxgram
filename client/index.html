@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
@@ -9,5 +9,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Fallback: if React doesn't mount within 6 seconds, show diagnostic info
+      setTimeout(function() {
+        var r = document.getElementById('root');
+        if (r && r.children.length === 0) {
+          r.innerHTML = '<div style="position:fixed;inset:0;background:#0f0f0f;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center">' +
+            '<h2 style="color:#dc2626;margin-bottom:1rem">DMXGram - React nie wystartował</h2>' +
+            '<p style="color:#aaa;margin-bottom:1rem">Wersja: ' + (document.title || '?') + '</p>' +
+            '<p style="color:#888;font-size:0.8rem">Strona załadowana z: ' + location.href + '</p>' +
+            '<p style="color:#888;font-size:0.8rem">User Agent: ' + navigator.userAgent + '</p>' +
+            '<button onclick="location.reload()" style="margin-top:1.5rem;padding:0.6rem 1.5rem;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem">Odśwież</button>' +
+            '</div>';
+        }
+      }, 6000);
+    </script>
   </body>
 </html>

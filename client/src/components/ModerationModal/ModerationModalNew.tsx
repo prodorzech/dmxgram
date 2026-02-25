@@ -637,7 +637,7 @@ export function ModerationModalNew({ user, token, onClose, onUpdate }: Moderatio
                 </h3>
                 <p className="badges-hint">{t('admin.modBadgesHint')}</p>
                 <div className="badges-grid">
-                  {BADGE_DEFS.map(badge => {
+                  {BADGE_DEFS.filter(badge => badge.id !== 'dmx-boost').map(badge => {
                     const active = localBadges.includes(badge.id);
                     return (
                       <button

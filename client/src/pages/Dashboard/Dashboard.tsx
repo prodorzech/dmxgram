@@ -7,7 +7,6 @@ import { UserPanel } from '../../components/UserPanel/UserPanel';
 import { UserSettingsModal } from '../../components/UserSettingsModal/UserSettingsModal';
 import { AdminPanel } from '../../components/AdminPanel/AdminPanel';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal/ChangePasswordModal';
-import { getImageUrl } from '../../utils/imageUrl';
 import './Dashboard.css';
 
 export function Dashboard() {
@@ -66,6 +65,16 @@ export function Dashboard() {
     return () => window.removeEventListener('dmx-nobg-changed', handler);
   }, []);
 
+  // Custom background image — stored as data URL in localStorage
+  const [customBg, setCustomBg] = useState(() => localStorage.getItem('dmx-custom-bg') || '');
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setCustomBg((e as CustomEvent).detail?.customBg ?? '');
+    };
+    window.addEventListener('dmx-bg-changed', handler);
+    return () => window.removeEventListener('dmx-bg-changed', handler);
+  }, []);
+
   // Check if user needs to change password
   useEffect(() => {
     if (user?.mustChangePassword) {
@@ -92,29 +101,21 @@ export function Dashboard() {
     setShowChangePassword(false);
   };
 
-  const bannerUrl = user?.banner ? getImageUrl(user.banner) : null;
-  const isGif = bannerUrl ? bannerUrl.toLowerCase().includes('.gif') : false;
-  // Effective banner: hidden when noBg is set
-  const effectiveBanner = noBg ? null : bannerUrl;
-
   return (
     <div className="dashboard">
-      {/* Blurred background layer — always rendered; uses banner if set, otherwise a subtle gradient */}
-      {effectiveBanner && isGif ? (
-        <img
-          className="dashboard-bg dashboard-bg-gif"
-          src={effectiveBanner}
-          alt=""
-          aria-hidden="true"
-        />
-      ) : (
-        <div
-          className="dashboard-bg"
-          style={effectiveBanner
-            ? { backgroundImage: `url(${effectiveBanner})` }
-            : { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }
-          }
-        />
+      {/* Blurred background layer — custom image or gradient; profile banner is in user info popover */}
+      {!noBg && (
+        customBg ? (
+          <div
+            className="dashboard-bg"
+            style={{ backgroundImage: `url(${customBg})` }}
+          />
+        ) : (
+          <div
+            className="dashboard-bg"
+            style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}
+          />
+        )
       )}
       <div className="dashboard-overlay" data-chat-open={!!currentFriend ? 'true' : 'false'}>
         {showAdminPanel ? (

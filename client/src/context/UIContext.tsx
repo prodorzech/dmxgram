@@ -47,7 +47,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     timerRef.current[id] = setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
       delete timerRef.current[id];
-    }, 3500);
+    }, 5000);
   }, []);
 
   const dismissToast = (id: number) => {

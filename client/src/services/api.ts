@@ -1,5 +1,21 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// Creates an error with an HTTP status code attached for proper error handling
+const httpError = (message: string, status: number): Error & { status: number } => {
+  const err = new Error(message) as Error & { status: number };
+  err.status = status;
+  return err;
+};
+
+// fetch() with an AbortController-based timeout (default 5 s)
+const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 5000): Promise<Response> => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .then(res => { clearTimeout(id); return res; })
+    .catch(err => { clearTimeout(id); throw err; });
+};
+
 export const api = {
   // Auth
   async register(username: string, email: string, password: string) {
@@ -57,10 +73,10 @@ export const api = {
   },
 
   async getMe(token: string) {
-    const res = await fetch(`${API_URL}/api/auth/me`, {
+    const res = await fetchWithTimeout(`${API_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch user');
+    if (!res.ok) throw httpError('Failed to fetch user', res.status);
     return res.json();
   },
 
@@ -324,10 +340,10 @@ export const api = {
   },
 
   async getFriends(token: string) {
-    const res = await fetch(`${API_URL}/api/friends`, {
+    const res = await fetchWithTimeout(`${API_URL}/api/friends`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch friends');
+    if (!res.ok) throw httpError('Failed to fetch friends', res.status);
     return res.json();
   },
 
@@ -448,5 +464,55 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to update badges');
     return res.json();
+  },
+
+  async createBoostCheckout(token: string): Promise<{ url: string }> {
+    const res = await fetch(`${API_URL}/api/payments/create-checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create checkout');
+    }
+    return res.json();
+  },
+
+  async redeemBoostCode(code: string, token: string): Promise<{ success: boolean; durationDays: number; expiresAt: string; user: any }> {
+    const res = await fetch(`${API_URL}/api/payments/redeem-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Redeem failed');
+    return data;
+  },
+
+  async getAdminBoostCodes(token: string): Promise<any[]> {
+    const res = await fetch(`${API_URL}/api/admin/boost-codes`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch codes');
+    return res.json();
+  },
+
+  async createAdminBoostCode(durationDays: number, maxUses: number, note: string, token: string): Promise<any> {
+    const res = await fetch(`${API_URL}/api/admin/boost-codes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ durationDays, maxUses, note }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create code');
+    return data;
+  },
+
+  async deleteAdminBoostCode(code: string, token: string): Promise<void> {
+    const res = await fetch(`${API_URL}/api/admin/boost-codes/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to delete code');
   }
 };

@@ -34,6 +34,8 @@ export interface User {
   warnings?: UserRestriction[];
   activeRestrictions?: UserRestriction[];
   badges?: string[];
+  hasDmxBoost?: boolean;
+  dmxBoostExpiresAt?: Date;
 }
 
 export interface Server {
@@ -106,6 +108,7 @@ export interface Friend {
   username: string;
   avatar?: string;
   bio?: string;
+  banner?: string;
   status: 'online' | 'offline' | 'away';
   badges?: string[];
 }

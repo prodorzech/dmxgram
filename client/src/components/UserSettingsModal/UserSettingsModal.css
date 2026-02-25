@@ -134,6 +134,13 @@
   gap: 12px;
 }
 
+.bg-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .banner-preview {
   width: 100%;
   height: 120px;
@@ -852,4 +859,254 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ── DMX Boost tab ───────────────────────────────────────────────────────── */
+.boost-tab-button {
+  position: relative;
+}
+
+.boost-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+  box-shadow: 0 0 6px rgba(34,197,94,0.7);
+}
+
+.boost-hero-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 2px solid rgba(250, 204, 21, 0.4);
+  box-shadow: 0 4px 24px rgba(250, 204, 21, 0.12);
+}
+
+.boost-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1a0a00 0%, #2d1600 40%, #1a1a00 100%);
+  z-index: 0;
+}
+
+.boost-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.boost-hero-icon {
+  color: #facc15;
+  filter: drop-shadow(0 0 12px rgba(250,204,21,0.6));
+}
+
+.boost-hero-text h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fef08a;
+  margin: 0 0 6px;
+  text-shadow: 0 0 20px rgba(250,204,21,0.4);
+}
+
+.boost-hero-text p {
+  font-size: 13px;
+  color: #a16207;
+  margin: 0;
+}
+
+.boost-buy-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  box-shadow: 0 4px 16px rgba(250,204,21,0.4);
+  margin-top: 4px;
+}
+
+.boost-buy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(250,204,21,0.6);
+  filter: brightness(1.08);
+}
+
+.boost-buy-btn:active {
+  transform: scale(0.97);
+}
+
+.boost-buy-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Locked boost feature sections */
+.boost-feature {
+  position: relative;
+}
+
+.boost-feature.boost-locked {
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.boost-lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+}
+
+/* Profile banner card preview */
+.profile-banner-card-preview {
+  position: relative;
+  width: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+}
+
+.profile-banner-card-strip {
+  width: 100%;
+  height: 70px;
+  background-size: cover;
+  background-position: center;
+}
+
+.profile-banner-card-avatar {
+  position: absolute;
+  top: 38px;
+  left: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-secondary);
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+  overflow: hidden;
+}
+
+.profile-banner-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-banner-card-name {
+  margin-top: 32px;
+  padding: 0 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+/*  Boost Redeem Code  */
+.boost-redeem-section {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.boost-redeem-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.boost-code-input {
+  flex: 1;
+  background: var(--bg-secondary, rgba(255,255,255,0.06));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.boost-code-input:focus { outline: none; border-color: #dc2626; }
+.boost-redeem-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+.boost-redeem-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.boost-redeem-btn:hover:not(:disabled) { opacity: 0.9; }
+.boost-code-msg {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.boost-code-msg--success {
+  background: rgba(34,197,94,0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.25);
+}
+.boost-code-msg--error {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.25);
+}
+/* Inline redeem result */
+.boost-redeem-result {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: fadeIn 0.2s ease;
+}
+.boost-redeem-result--ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.boost-redeem-result--err {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }

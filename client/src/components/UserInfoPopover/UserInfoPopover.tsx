@@ -14,13 +14,14 @@ interface UserInfoPopoverProps {
   username: string;
   avatar?: string;
   bio?: string;
+  banner?: string;
   status: 'online' | 'offline' | 'away';
   badges?: string[];
   onClose: () => void;
   position: { x: number; y: number };
 }
 
-export function UserInfoPopover({ userId, username, avatar, bio, status, badges, onClose, position }: UserInfoPopoverProps) {
+export function UserInfoPopover({ userId, username, avatar, bio, banner, status, badges, onClose, position }: UserInfoPopoverProps) {
   const { t } = useTranslation();
   const { user, token } = useStore();
   const { toast } = useUI();
@@ -85,6 +86,12 @@ export function UserInfoPopover({ userId, username, avatar, bio, status, badges,
         <button className="popover-close-btn" onClick={onClose}>
           <X size={16} />
         </button>
+
+        {banner && (
+          <div className="popover-banner">
+            <img src={getImageUrl(banner)} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          </div>
+        )}
 
         <div className="popover-avatar-section">
           <div className="popover-avatar">

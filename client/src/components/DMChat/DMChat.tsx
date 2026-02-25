@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical } from 'lucide-react';
+import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { useUI } from '../../context/UIContext';
@@ -11,6 +11,7 @@ import { UserInfoPopover } from '../UserInfoPopover/UserInfoPopover';
 import { UserProfileSidebar } from '../UserProfileSidebar/UserProfileSidebar';
 import { MediaLightbox } from '../MediaLightbox/MediaLightbox';
 import { ReportModal } from '../ReportModal/ReportModal';
+import { ForwardMessageModal } from '../ForwardMessageModal/ForwardMessageModal';
 import { getImageUrl } from '../../utils/imageUrl';
 import { DirectMessage, MessageAttachment } from '../../types';
 import './DMChat.css';
@@ -35,7 +36,7 @@ export const DMChat: React.FC = () => {
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
   const [popoverUser, setPopoverUser] = useState<{
     userId: string; username: string; avatar?: string; bio?: string;
-    status: 'online' | 'offline' | 'away'; badges?: string[];
+    banner?: string; status: 'online' | 'offline' | 'away'; badges?: string[];
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export const DMChat: React.FC = () => {
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; username: string } | null>(null);
   const [noPing, setNoPing] = useState(false);
   const [reportModalMessage, setReportModalMessage] = useState<DirectMessage | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<DirectMessage | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearInput, setClearInput] = useState('');
   const [showChatMenu, setShowChatMenu] = useState(false);
@@ -69,9 +71,22 @@ export const DMChat: React.FC = () => {
   const msgTimestampsRef = useRef<number[]>([]);
   const spamCooldownRef = useRef<number | null>(null);
 
+  // ── Voice recording state ──────────────────────────────────────────────
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [volumeLevels, setVolumeLevels] = useState<number[]>([0, 0, 0, 0, 0]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const recordingTimerRef = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
+
   // ── Media message helpers ──────────────────────────────────────────────
   const MEDIA_PREFIX = '__DMX_MEDIA__:';
   const REPLY_PREFIX = '__DMX_REPLY__:';
+  const FORWARD_PREFIX = '__DMX_FORWARD__:';
   const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮'];
 
   const parseMessage = (content: string): {
@@ -81,9 +96,12 @@ export const DMChat: React.FC = () => {
     replyToContent?: string;
     replyToUsername?: string;
     noPing?: boolean;
+    forwarded?: boolean;
+    forwardedFrom?: string;
   } => {
     const prefix = content.startsWith(MEDIA_PREFIX) ? MEDIA_PREFIX
       : content.startsWith(REPLY_PREFIX) ? REPLY_PREFIX
+      : content.startsWith(FORWARD_PREFIX) ? FORWARD_PREFIX
       : null;
     if (prefix) {
       try {
@@ -95,6 +113,8 @@ export const DMChat: React.FC = () => {
           replyToContent: parsed.replyToContent,
           replyToUsername: parsed.replyToUsername,
           noPing: parsed.noPing,
+          forwarded: parsed.forwarded,
+          forwardedFrom: parsed.forwardedFrom,
         };
       } catch {
         return { text: content, attachments: [] };
@@ -120,6 +140,124 @@ export const DMChat: React.FC = () => {
     }
     const prefix = attachments.length > 0 ? MEDIA_PREFIX : REPLY_PREFIX;
     return prefix + JSON.stringify(payload);
+  };
+
+  // ── Voice recording helpers ────────────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // Set up analyser for volume visualisation
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      audioContextRef.current = audioCtx;
+      analyserRef.current = analyser;
+
+      // MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.start();
+
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      // Timer
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+      // Volume animation loop
+      const updateVolume = () => {
+        if (!analyserRef.current) return;
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        // Take 5 frequency bands for 5 dots
+        const bands = 5;
+        const bandSize = Math.floor(dataArray.length / bands);
+        const levels: number[] = [];
+        for (let i = 0; i < bands; i++) {
+          let sum = 0;
+          for (let j = i * bandSize; j < (i + 1) * bandSize; j++) {
+            sum += dataArray[j];
+          }
+          levels.push(sum / bandSize / 255); // 0-1
+        }
+        setVolumeLevels(levels);
+        animFrameRef.current = requestAnimationFrame(updateVolume);
+      };
+      animFrameRef.current = requestAnimationFrame(updateVolume);
+    } catch {
+      toast(t('chat.voiceMicError'), 'error');
+    }
+  };
+
+  const stopRecording = (): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === 'inactive') {
+        resolve(null);
+        return;
+      }
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        resolve(blob);
+      };
+      recorder.stop();
+      cleanupRecording();
+    });
+  };
+
+  const cleanupRecording = () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (audioContextRef.current) audioContextRef.current.close();
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+    setIsRecording(false);
+    setRecordingTime(0);
+    setVolumeLevels([0, 0, 0, 0, 0]);
+  };
+
+  const handleCancelRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') recorder.stop();
+    cleanupRecording();
+  };
+
+  const handleSendVoice = async () => {
+    if (!currentFriend || !token) return;
+    const blob = await stopRecording();
+    if (!blob || blob.size === 0) return;
+    const file = new File([blob], 'voice-message.webm', { type: 'audio/webm' });
+    setIsUploading(true);
+    try {
+      const { attachments } = await api.uploadChatFiles([file], token);
+      const content = encodeMessage('', attachments, replyingTo, noPing);
+      socketService.emit('dm:send', { friendId: currentFriend.id, content });
+      setReplyingTo(null);
+      setNoPing(false);
+    } catch (err: any) {
+      toast(err.message || 'Failed to upload voice message', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const formatRecordingTime = (secs: number): string => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   // Keep backward-compat alias (used for editing existing messages in the future)
@@ -373,13 +511,13 @@ export const DMChat: React.FC = () => {
   };
 
   const handleAvatarClick = (event: React.MouseEvent, userId: string, username: string,
-    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away', badges?: string[]) => {
+    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away', badges?: string[], banner?: string) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const POPOVER_W = 290;
     const POPOVER_H = bio ? 320 : 240;
     const x = Math.min(rect.left + rect.width + 10, window.innerWidth - POPOVER_W - 10);
     const y = Math.min(rect.top, window.innerHeight - POPOVER_H - 10);
-    setPopoverUser({ userId, username, avatar, bio, status: status || 'offline', badges });
+    setPopoverUser({ userId, username, avatar, bio, banner, status: status || 'offline', badges });
     setPopoverPosition({ x: Math.max(4, x), y: Math.max(4, y) });
     setShowUserPopover(true);
   };
@@ -460,6 +598,23 @@ export const DMChat: React.FC = () => {
       toast(t('report.error'), 'error');
     }
     setReportModalMessage(null);
+  };
+
+  const handleForward = (friendIds: string[]) => {
+    if (!forwardingMessage || !user) return;
+    const parsed = parseMessage(forwardingMessage.content);
+    const forwardPayload = {
+      text: parsed.text,
+      attachments: parsed.attachments,
+      forwarded: true,
+      forwardedFrom: forwardingMessage.senderUsername,
+    };
+    const content = FORWARD_PREFIX + JSON.stringify(forwardPayload);
+    for (const friendId of friendIds) {
+      socketService.emit('dm:send', { friendId, content });
+    }
+    toast(t('chat.forwardSuccess'), 'success');
+    setForwardingMessage(null);
   };
 
   const handleClearChat = () => {
@@ -594,6 +749,7 @@ export const DMChat: React.FC = () => {
               const senderBio = isOwn ? user?.bio : dm.senderBio;
               const senderStatus: 'online' | 'offline' | 'away' = isOwn ? (user?.status as any || 'online') : (currentFriend?.status || 'offline');
               const senderBadges = isOwn ? user?.badges : currentFriend?.badges;
+              const senderBanner = isOwn ? user?.banner : currentFriend?.banner;
 
               return (
                 <div
@@ -603,7 +759,7 @@ export const DMChat: React.FC = () => {
                 >
                   {showAvatar ? (
                     <div className="message-avatar clickable"
-                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges)}
+                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner)}
                       title={t('chat.clickToSeeUserInfo')}>
                       {senderAvatar ? (
                         <img src={getImageUrl(senderAvatar)} alt={senderUsername} />
@@ -618,7 +774,7 @@ export const DMChat: React.FC = () => {
                     {showAvatar && (
                       <div className="message-header">
                         <span className={`message-username${isOwn ? ' own-name' : ''} clickable`}
-                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges)}
+                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner)}
                           title={t('chat.clickToSeeUserInfo')}>
                           {senderUsername}
                         </span>
@@ -645,6 +801,12 @@ export const DMChat: React.FC = () => {
                           const parsed = parseMessage(dm.content);
                           return (
                             <>
+                              {parsed.forwarded && (
+                                <div className="msg-forwarded-label">
+                                  <Share2 size={12} />
+                                  <span>{t('chat.forwarded')}</span>
+                                </div>
+                              )}
                               {parsed.replyToId && (
                                 <div className="msg-reply-snippet">
                                   <span className="msg-reply-arrow">↱</span>
@@ -658,7 +820,18 @@ export const DMChat: React.FC = () => {
                               {parsed.attachments.length > 0 && (
                                 <div className={`msg-attachments${parsed.attachments.length === 1 ? ' single' : ''}`}>
                                   {parsed.attachments.map((att, ai) => (
-                                    att.mimetype.startsWith('video/') ? (
+                                    att.mimetype.startsWith('audio/') ? (
+                                      <div key={ai} className="msg-voice-player">
+                                        <Mic size={16} className="msg-voice-icon" />
+                                        <span className="msg-voice-label">{t('chat.voiceNote')}</span>
+                                        <audio
+                                          src={getImageUrl(att.url)}
+                                          controls
+                                          preload="metadata"
+                                          className="msg-audio"
+                                        />
+                                      </div>
+                                    ) : att.mimetype.startsWith('video/') ? (
                                       <div key={ai} className="msg-media-item msg-video-item" onClick={() => openLightbox(parsed.attachments, ai)}>
                                         <video
                                           src={getImageUrl(att.url)}
@@ -813,6 +986,26 @@ export const DMChat: React.FC = () => {
               ))}
             </div>
           )}
+          {isRecording ? (
+            <div className="dm-input-form voice-recording-bar">
+              <button type="button" className="voice-cancel-btn" onClick={handleCancelRecording} title={t('chat.voiceCancel')}>
+                <X size={20} />
+              </button>
+              <div className="voice-visualizer">
+                {volumeLevels.map((level, i) => (
+                  <span
+                    key={i}
+                    className="voice-dot"
+                    style={{ transform: `scale(${0.5 + level * 1.5})` }}
+                  />
+                ))}
+              </div>
+              <span className="voice-timer">{formatRecordingTime(recordingTime)}</span>
+              <button type="button" className="voice-send-btn" onClick={handleSendVoice} title={t('chat.voiceSend')}>
+                <Send size={20} />
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSendMessage} className="dm-input-form" onPaste={handlePaste}>
             <button type="button" className={`emoji-btn ${showEmojiPicker ? 'active' : ''}`}
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
@@ -855,6 +1048,14 @@ export const DMChat: React.FC = () => {
                 <div className="chat-more-dropdown">
                   <button
                     type="button"
+                    className="chat-more-item"
+                    onClick={() => { setShowChatMenu(false); startRecording(); }}
+                  >
+                    <Mic size={14} />
+                    {t('chat.voiceMessage')}
+                  </button>
+                  <button
+                    type="button"
                     className="chat-more-item danger"
                     onClick={() => { setShowChatMenu(false); setShowClearModal(true); setClearInput(''); }}
                   >
@@ -865,6 +1066,7 @@ export const DMChat: React.FC = () => {
               )}
             </div>
           </form>
+          )}
             </>
           )}
         </div>
@@ -875,7 +1077,7 @@ export const DMChat: React.FC = () => {
         {showUserPopover && popoverUser && (
           <UserInfoPopover userId={popoverUser.userId} username={popoverUser.username}
             avatar={popoverUser.avatar} bio={popoverUser.bio} status={popoverUser.status}
-            badges={popoverUser.badges}
+            badges={popoverUser.badges} banner={popoverUser.banner}
             position={popoverPosition} onClose={() => setShowUserPopover(false)} />
         )}
 
@@ -893,6 +1095,10 @@ export const DMChat: React.FC = () => {
               setContextMenu(null);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}><CornerUpLeft size={14} /> Reply</button>
+            <button className="ctx-item" onClick={() => {
+              setForwardingMessage(contextMenu.message);
+              setContextMenu(null);
+            }}><Share2 size={14} /> {t('chat.forward')}</button>
             {parseMessage(contextMenu.message.content).text && (
               <button className="ctx-item" onClick={handleCopyMessage}><Copy size={14} /> {t('chat.copy')}</button>
             )}
@@ -939,6 +1145,14 @@ export const DMChat: React.FC = () => {
           senderUsername={reportModalMessage.senderUsername}
           onClose={() => setReportModalMessage(null)}
           onSubmit={handleReportSubmit}
+        />
+      )}
+
+      {forwardingMessage && (
+        <ForwardMessageModal
+          friends={friends}
+          onClose={() => setForwardingMessage(null)}
+          onForward={handleForward}
         />
       )}
 

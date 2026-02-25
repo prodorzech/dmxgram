@@ -1,0 +1,73 @@
+/* Anti-screenshot overlay — always on top, never blocks interaction */
+.anti-screenshot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* ── Tiled diagonal watermarks across the whole screen ── */
+.anti-screenshot-tiles {
+  position: absolute;
+  inset: -60px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 48px 60px;
+  transform: rotate(-30deg);
+  transform-origin: center center;
+  opacity: 0.05;
+}
+
+.anti-screenshot-tile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.anti-screenshot-tile-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: grayscale(0.3);
+}
+
+.anti-screenshot-tile-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* ── Large centre watermark ── */
+.anti-screenshot-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.07;
+}
+
+.anti-screenshot-center-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  filter: grayscale(0.3);
+}
+
+.anti-screenshot-center-text {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}

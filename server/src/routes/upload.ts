@@ -4,7 +4,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Response } from 'express';
-import { getSupabase } from '../database';
+import { getSupabase, db } from '../database';
 
 const router = Router();
 
@@ -51,7 +51,17 @@ const uploadAvatar = multer({
 router.post('/avatar', authMiddleware, uploadAvatar.single('avatar'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Brak pliku' });
-    const filename = `${uuidv4()}${path.extname(req.file.originalname)}`;
+
+    // GIF avatars require DMX Boost
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (ext === '.gif' || req.file.mimetype === 'image/gif') {
+      const u = await db.getUserById(req.userId!);
+      if (!u?.hasDmxBoost) {
+        return res.status(403).json({ error: 'Animowany avatar (GIF) wymaga DMX Boost' });
+      }
+    }
+
+    const filename = `${uuidv4()}${ext}`;
     const publicUrl = await uploadToStorage('avatars', filename, req.file.buffer, req.file.mimetype);
     res.json({ url: publicUrl });
   } catch (error: any) {
@@ -77,6 +87,11 @@ const uploadBanner = multer({
 router.post('/banner', authMiddleware, uploadBanner.single('banner'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Brak pliku' });
+    // Banner upload requires DMX Boost
+    const u = await db.getUserById(req.userId!);
+    if (!u?.hasDmxBoost) {
+      return res.status(403).json({ error: 'Baner profilowy wymaga DMX Boost' });
+    }
     const filename = `${uuidv4()}${path.extname(req.file.originalname)}`;
     const publicUrl = await uploadToStorage('banners', filename, req.file.buffer, req.file.mimetype);
     res.json({ url: publicUrl });
@@ -87,8 +102,8 @@ router.post('/banner', authMiddleware, uploadBanner.single('banner'), async (req
 });
 
 // ─── Chat media upload ─────────────────────────────────────────────────────────
-const ALLOWED_CHAT_MIME = /^(image\/(jpeg|jpg|png|gif|webp)|video\/(mp4|webm|quicktime|x-msvideo|avi|mov))$/;
-const ALLOWED_CHAT_EXT = /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi)$/i;
+const ALLOWED_CHAT_MIME = /^(image\/(jpeg|jpg|png|gif|webp)|video\/(mp4|webm|quicktime|x-msvideo|avi|mov)|audio\/(webm|ogg|mp4|mpeg|wav))$/;
+const ALLOWED_CHAT_EXT = /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|avi|ogg|wav|mp3)$/i;
 
 const uploadChatMedia = multer({
   storage: memoryStorage,

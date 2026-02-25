@@ -1,4 +1,4 @@
-import { Wrench, Bug, Link, CheckCircle2, Wallet, Camera, Shield, Headphones, Zap, type LucideIcon } from 'lucide-react';
+import { Wrench, Bug, Link, CheckCircle2, Wallet, Camera, Shield, Headphones, Zap, Rocket, type LucideIcon } from 'lucide-react';
 import './UserBadges.css';
 
 export type BadgeId =
@@ -12,7 +12,8 @@ export type BadgeId =
   | 'media'
   | 'staff'
   | 'moderator'
-  | 'beta-tester';
+  | 'beta-tester'
+  | 'dmx-boost';
 
 interface BadgeDef {
   id: BadgeId;
@@ -34,6 +35,7 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: 'staff',        label: 'Staff',           Icon: Shield,      color: '#2563eb', bg: 'rgba(37,99,235,0.15)'  },
   { id: 'moderator',    label: 'Moderator',       Icon: Headphones,  color: '#14b8a6', bg: 'rgba(20,184,166,0.15)' },
   { id: 'beta-tester',  label: 'Beta Tester',     Icon: Zap,         color: '#f97316', bg: 'rgba(249,115,22,0.15)' },
+  { id: 'dmx-boost',    label: 'DMX Boost',        Icon: Rocket,      color: '#f59e0b', bg: 'rgba(245,158,11,0.18)' },
 ];
 
 interface UserBadgesProps {

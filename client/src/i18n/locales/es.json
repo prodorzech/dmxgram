@@ -95,7 +95,22 @@
     "youBlockedUser": "Has bloqueado a {{username}}. Desbloquéalo para enviar mensajes.",
     "copy": "Copiar texto",
     "copied": "¡Copiado!",
-    "moreReactions": "Más reacciones"
+    "moreReactions": "Más reacciones",
+    "forward": "Reenviar",
+    "forwardTo": "Reenviar a...",
+    "forwarded": "Reenviado",
+    "forwardSuccess": "Mensaje reenviado",
+    "forwardSelectFriends": "Seleccionar amigos",
+    "forwardNoFriends": "Sin amigos",
+    "forwardSearchPlaceholder": "Buscar amigos...",
+    "forwardSend": "Reenviar",
+    "voiceMessage": "Mensaje de voz",
+    "voiceRecording": "Grabando...",
+    "voiceStop": "Detener",
+    "voiceSend": "Enviar grabación",
+    "voiceCancel": "Cancelar",
+    "voiceMicError": "Sin acceso al micrófono",
+    "voiceNote": "Mensaje de voz"
   },
   "user": {
     "settings": "Configuración de usuario",
@@ -167,6 +182,9 @@
     "bgEnabled": "El fondo está activado",
     "removeBg": "Eliminar fondo",
     "restoreBg": "Restaurar fondo",
+    "customBgUpload": "Imagen de fondo personalizada",
+    "customBgHint": "Sube una imagen para usarla como fondo de la app (guardada localmente)",
+    "clearCustomBg": "Eliminar imagen",
     "reportUser": "Reportar usuario",
     "spamWarning": "⏳ ¡Envías demasiado rápido! Espera {{seconds}}s"
   },
@@ -192,6 +210,9 @@
     "noEmoji": "Emoji no encontrado",
     "noRecent": "No hay recientes",
     "searchResults": "Resultados de búsqueda"
+  },
+  "antiscreenshot": {
+    "label": "Anti Captura de Pantalla"
   },
   "upload": {
     "avatarHint": "JPG, PNG, GIF, WEBP (máx 5MB)",
@@ -344,12 +365,50 @@
     "modManageBadges": "Gestionar insignias",
     "modBadgesHint": "Haz clic en una insignia para otorgarla o revocarla.",
     "modNoBadges": "Este usuario no tiene insignias.",
-    "modEnterReason": "Por favor ingresa un motivo"
+    "modEnterReason": "Por favor ingresa un motivo",
+    "boostCodes": "Códigos Boost",
+    "generateCode": "Generar nuevo código",
+    "generateBtn": "Generar",
+    "generating": "Generando...",
+    "codeGenerated": "Código generado",
+    "codeDuration": "Duración (días)",
+    "codeDurationHint": "Número de días de activación del boost",
+    "codeMaxUses": "Usos máx.",
+    "codeMaxUsesHint": "Cuántas veces se puede usar este código",
+    "codeNote": "Nota",
+    "codeNotePlaceholder": "ej. premio del concurso",
+    "codeCopy": "Copiar código",
+    "codeCopied": "¡Código copiado!",
+    "codeDelete": "Eliminar código",
+    "codeDeleted": "Código eliminado",
+    "codeUsesLeft": "usos restantes",
+    "noBoostCodes": "Aún no se han generado códigos boost",
+    "allCodes": "Todos los códigos",
+    "refresh": "Actualizar"
   },
   "status": {
     "online": "En línea",
     "offline": "Desconectado",
     "away": "Vuelvo enseguida"
+  },
+  "boost": {
+    "active": "DMX Boost Activo 🚀",
+    "expiresOn": "Expira: {{date}}",
+    "tagline": "Desbloquea el banner de cuenta, colores de acento y una insignia exclusiva.",
+    "buy": "Comprar DMX Boost — $4.99/mes",
+    "loading": "Cargando...",
+    "requiresBoost": "Requiere DMX Boost",
+    "accountBanner": "Banner de cuenta",
+    "redeemCode": "Canjear código",
+    "redeemPlaceholder": "BOOST-XXXXXXXX",
+    "redeemBtn": "Usar código",
+    "redeemSuccess": "¡Activado por {{days}} días! Expira: {{date}}",
+    "redeemErrInvalid": "Código inválido o caducado",
+    "redeemErrUsed": "Ya has usado este código",
+    "redeemErrSchema": "Error de configuración del servidor — ejecuta users_boost_migration.sql en Supabase",
+    "gifAvatarRequiresBoost": "El avatar animado (GIF) requiere DMX Boost",
+    "customBgRequiresBoost": "El fondo personalizado requiere DMX Boost",
+    "gifAvatarHint": "Avatares animados (GIF) disponibles con DMX Boost"
   },
   "dialog": {
     "confirm": "Confirmar",

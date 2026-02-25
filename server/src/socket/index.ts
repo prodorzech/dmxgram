@@ -15,13 +15,22 @@ export const getIO = (): SocketIOServer => {
 export const initializeSocket = (httpServer: HTTPServer) => {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-        'http://localhost:3003',
-        process.env.CLIENT_URL || ''
-      ].filter(Boolean),
+      origin: (origin, callback) => {
+        // Allow file:// (Electron loadFile), null origin, and localhost
+        if (!origin || origin === 'null' || origin.startsWith('file://') || origin.startsWith('dmx://')) {
+          return callback(null, true);
+        }
+        const allowed = [
+          'http://localhost:3000', 'http://localhost:3001',
+          'http://localhost:3002', 'http://localhost:3003',
+          process.env.CLIENT_URL || ''
+        ].filter(Boolean);
+        if (allowed.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Socket CORS: not allowed'));
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -36,7 +45,9 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+      const secret = process.env.JWT_SECRET;
+      if (!secret) return next(new Error('Authentication error'));
+      const decoded = jwt.verify(token, secret) as { userId: string };
       (socket as any).userId = decoded.userId;
       next();
     } catch (err) {
@@ -56,6 +67,12 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     const preferredStatus: 'online' | 'offline' | 'away' =
       (userForStatus?.status === 'away') ? 'away' : 'online';
     db.updateUserStatus(userId, preferredStatus);
+
+    // ── Heartbeat — refresh last_online every 60s so stale-status detection
+    //   can tell when a user's machine cut out without a clean disconnect.
+    const heartbeatInterval = setInterval(() => {
+      db.updateUserStatus(userId, db.getStatusFromCache(userId) ?? 'online');
+    }, 60_000);
 
     // Join personal room for notifications (friend requests, etc.)
     socket.join(`user:${userId}`);
@@ -312,9 +329,13 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     // Disconnect
     socket.on('disconnect', async () => {
       console.log(`User disconnected: ${userId}`);
+      clearInterval(heartbeatInterval);
       db.removeSession(socket.id);
-      db.updateUserStatus(userId, 'offline');
-      socket.broadcast.emit('user:status', { userId, status: 'offline' });
+      // Only mark offline if this was the last active connection for this user
+      if (db.countActiveSessions(userId) === 0) {
+        db.updateUserStatus(userId, 'offline');
+        socket.broadcast.emit('user:status', { userId, status: 'offline' });
+      }
     });
   });
 

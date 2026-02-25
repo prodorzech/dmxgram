@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Renderer → main
   downloadUpdate: () => ipcRenderer.send('download-update'),
   showNotification: (opts) => ipcRenderer.send('show-notification', opts),
+  openExternal: (url) => ipcRenderer.send('open-external', url),
 
   // Cleanup
   removeUpdateListeners: () => {

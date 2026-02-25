@@ -95,7 +95,22 @@
     "youBlockedUser": "You have blocked {{username}}. Unblock them to send messages.",
     "copy": "Copy text",
     "copied": "Copied!",
-    "moreReactions": "More reactions"
+    "moreReactions": "More reactions",
+    "forward": "Forward",
+    "forwardTo": "Forward to...",
+    "forwarded": "Forwarded",
+    "forwardSuccess": "Message forwarded",
+    "forwardSelectFriends": "Select friends",
+    "forwardNoFriends": "No friends",
+    "forwardSearchPlaceholder": "Search friends...",
+    "forwardSend": "Forward",
+    "voiceMessage": "Voice message",
+    "voiceRecording": "Recording...",
+    "voiceStop": "Stop",
+    "voiceSend": "Send recording",
+    "voiceCancel": "Cancel",
+    "voiceMicError": "No microphone access",
+    "voiceNote": "Voice message"
   },
   "user": {
     "settings": "User Settings",
@@ -167,6 +182,9 @@
     "bgEnabled": "Background is enabled",
     "removeBg": "Remove background",
     "restoreBg": "Restore background",
+    "customBgUpload": "Custom background image",
+    "customBgHint": "Upload an image to use as your app background (stored locally)",
+    "clearCustomBg": "Clear image",
     "reportUser": "Report user",
     "spamWarning": "⏳ Sending too fast! Wait {{seconds}}s"
   },
@@ -192,6 +210,9 @@
     "noEmoji": "No emoji found",
     "noRecent": "No recently used",
     "searchResults": "Search results"
+  },
+  "antiscreenshot": {
+    "label": "Anti Screenshot"
   },
   "upload": {
     "avatarHint": "JPG, PNG, GIF, WEBP (max 5MB)",
@@ -349,10 +370,48 @@
     "modManageBadges": "Manage Badges",
     "modBadgesHint": "Click a badge to grant or revoke it.",
     "modNoBadges": "This user has no badges.",
-    "modEnterReason": "Please enter a reason"
+    "modEnterReason": "Please enter a reason",
+    "boostCodes": "Boost Codes",
+    "generateCode": "Generate New Code",
+    "generateBtn": "Generate",
+    "generating": "Generating...",
+    "codeGenerated": "Code generated",
+    "codeDuration": "Duration (days)",
+    "codeDurationHint": "Number of days boost will be active",
+    "codeMaxUses": "Max uses",
+    "codeMaxUsesHint": "How many times this code can be used",
+    "codeNote": "Note",
+    "codeNotePlaceholder": "e.g. prize for contest",
+    "codeCopy": "Copy code",
+    "codeCopied": "Code copied!",
+    "codeDelete": "Delete code",
+    "codeDeleted": "Code deleted",
+    "codeUsesLeft": "uses left",
+    "noBoostCodes": "No boost codes generated yet",
+    "allCodes": "All codes",
+    "refresh": "Refresh"
   },
   "dialog": {
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "boost": {
+    "active": "DMX Boost Active 🚀",
+    "expiresOn": "Expires: {{date}}",
+    "tagline": "Unlock account banner, accent colors and an exclusive badge.",
+    "buy": "Buy DMX Boost — $4.99/month",
+    "loading": "Loading...",
+    "requiresBoost": "Requires DMX Boost",
+    "accountBanner": "Account Banner",
+    "redeemCode": "Redeem Code",
+    "redeemPlaceholder": "BOOST-XXXXXXXX",
+    "redeemBtn": "Redeem",
+    "redeemSuccess": "Activated for {{days}} days! Expires: {{date}}",
+    "redeemErrInvalid": "Invalid or expired code",
+    "redeemErrUsed": "You already used this code",
+    "redeemErrSchema": "Server config error — run users_boost_migration.sql in Supabase",
+    "gifAvatarRequiresBoost": "Animated avatar (GIF) requires DMX Boost",
+    "customBgRequiresBoost": "Custom background requires DMX Boost",
+    "gifAvatarHint": "Animated avatars (GIF) available with DMX Boost"
   }
 }

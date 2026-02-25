@@ -5,6 +5,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { UserRestriction, UserRestrictions } from '../types';
 import { generateRandomPassword } from '../utils/passwordValidation';
 import { getIO } from '../socket';
+import { createBoostCode, listBoostCodes, deleteBoostCode } from '../utils/boostCodes';
 
 // Helper: push updated user data to the affected user's socket room
 const emitUserUpdated = (userId: string, user: any) => {
@@ -310,6 +311,34 @@ router.get('/reports/:reportId/conversation', authMiddleware, adminMiddleware, a
     console.error('Get report conversation error:', error);
     res.status(500).json({ error: 'Błąd serwera' });
   }
+});
+
+// ── Boost Codes ────────────────────────────────────────────────────────────────
+
+// GET /api/admin/boost-codes  — list all active codes
+router.get('/boost-codes', authMiddleware, adminMiddleware, async (_req, res) => {
+  res.json(await listBoostCodes());
+});
+
+// POST /api/admin/boost-codes  — generate a new code
+router.post('/boost-codes', authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const { durationDays, maxUses = 1, note } = req.body as {
+    durationDays?: number;
+    maxUses?: number;
+    note?: string;
+  };
+  if (!durationDays || durationDays < 1) {
+    return res.status(400).json({ error: 'durationDays must be >= 1' });
+  }
+  const code = await createBoostCode(Number(durationDays), Number(maxUses) || 1, note);
+  res.json(code);
+});
+
+// DELETE /api/admin/boost-codes/:code  — revoke a code
+router.delete('/boost-codes/:code', authMiddleware, adminMiddleware, async (req, res) => {
+  const deleted = await deleteBoostCode(req.params.code);
+  if (!deleted) return res.status(404).json({ error: 'Code not found' });
+  res.json({ success: true });
 });
 
 export default router;

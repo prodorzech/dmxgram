@@ -8,12 +8,18 @@ export interface AuthRequest extends Request {
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Brak tokenu autoryzacji' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('[auth] JWT_SECRET not set – rejecting request');
+      return res.status(500).json({ error: 'Błąd konfiguracji serwera' });
+    }
+
+    const decoded = jwt.verify(token, secret) as { userId: string };
     req.userId = decoded.userId;
     next();
   } catch (error) {

@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
+import { useUI } from '../../context/UIContext';
 import { useStore } from '../../store';
 import { api } from '../../services/api';
 import {
   X, User as UserIcon, Upload, Moon, Sun, Globe, AlertTriangle, Layers, Bell,
-  Palette, ImageOff, CheckCircle2, Ban, Shield, Calendar, Mail, Star
+  Palette, ImageOff, CheckCircle2, Ban, Shield, Calendar, Mail, Star, Rocket, Lock
 } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
@@ -28,7 +29,12 @@ interface UserSettingsModalProps {
 export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   const { user, token, setUser, theme, toggleTheme } = useStore();
   const { i18n, t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'account'>('profile');
+  const { toast } = useUI();
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'account' | 'boost'>('profile');
+  const [boostLoading, setBoostLoading] = useState(false);
+  const [boostCode, setBoostCode] = useState('');
+  const [boostCodeLoading, setBoostCodeLoading] = useState(false);
+  const [boostCodeResult, setBoostCodeResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [customStatus, setCustomStatus] = useState(user?.customStatus || '');
@@ -50,8 +56,12 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [customBg, setCustomBg] = useState<string>(
+    () => localStorage.getItem('dmx-custom-bg') || ''
+  );
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const customBgFileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
@@ -60,6 +70,13 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError(t('upload.avatarTooLarge'));
+        return;
+      }
+      // GIF avatars require DMX Boost
+      const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
+      if (isGif && !user?.hasDmxBoost) {
+        setError(t('boost.gifAvatarRequiresBoost'));
+        if (e.target) e.target.value = '';
         return;
       }
       setAvatarFile(file);
@@ -107,11 +124,83 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
     document.documentElement.style.setProperty('--accent-shadow',  color.shadow);
   };
 
+  const handleCustomBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    // Custom background requires DMX Boost
+    if (!user?.hasDmxBoost) {
+      setError(t('boost.customBgRequiresBoost'));
+      if (e.target) e.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t('upload.fileTooLarge', { size: 10 }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setCustomBg(dataUrl);
+      localStorage.setItem('dmx-custom-bg', dataUrl);
+      window.dispatchEvent(new CustomEvent('dmx-bg-changed', { detail: { customBg: dataUrl } }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearCustomBg = () => {
+    setCustomBg('');
+    localStorage.removeItem('dmx-custom-bg');
+    window.dispatchEvent(new CustomEvent('dmx-bg-changed', { detail: { customBg: '' } }));
+  };
+
   const handleNoBgToggle = () => {
     const next = !noBg;
     setNoBg(next);
     localStorage.setItem('dmx-no-bg', next.toString());
     window.dispatchEvent(new CustomEvent('dmx-nobg-changed', { detail: { noBg: next } }));
+  };
+
+  const handleBoostPurchase = async () => {
+    if (!token) return;
+    setBoostLoading(true);
+    try {
+      const { url } = await api.createBoostCheckout(token);
+      // Open in system browser via Electron IPC or fallback
+      if ((window as any).electronAPI?.openExternal) {
+        (window as any).electronAPI.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to start purchase');
+    } finally {
+      setBoostLoading(false);
+    }
+  };
+
+  const handleRedeemCode = async () => {
+    if (!token || !boostCode.trim()) return;
+    setBoostCodeLoading(true);
+    setBoostCodeResult(null);
+    try {
+      const result = await api.redeemBoostCode(boostCode.trim(), token);
+      const expires = new Date(result.expiresAt).toLocaleDateString();
+      const msg = t('boost.redeemSuccess', { days: result.durationDays, date: expires });
+      setBoostCodeResult({ ok: true, msg });
+      toast(msg, 'success');
+      setBoostCode('');
+      if (result.user) setUser({ ...user!, ...result.user });
+    } catch (err: any) {
+      const key = err.message === 'invalidCode'        ? 'boost.redeemErrInvalid'
+                : err.message === 'alreadyUsed'        ? 'boost.redeemErrUsed'
+                : err.message === 'missingBoostColumns' ? 'boost.redeemErrSchema'
+                : null;
+      const msg = key ? t(key) : (err.message || t('boost.redeemErrInvalid'));
+      setBoostCodeResult({ ok: false, msg });
+      toast(msg, 'error');
+    } finally {
+      setBoostCodeLoading(false);
+    }
   };
 
   const handleLanguageChange = async (languageCode: string) => {
@@ -135,6 +224,8 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Only save profile if we're on a tab that has saveable content
+    if (activeTab !== 'profile' && activeTab !== 'appearance') return;
     setError('');
     setLoading(true);
 
@@ -220,6 +311,14 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
           >
             <AlertTriangle size={18} />
             {t('user.accountStatus')}
+          </button>
+          <button
+            className={`tab-button boost-tab-button ${activeTab === 'boost' ? 'active' : ''}`}
+            onClick={() => setActiveTab('boost')}
+          >
+            <Rocket size={18} />
+            DMX Boost
+            {user?.hasDmxBoost && <span className="boost-active-dot" />}
           </button>
         </div>
 
@@ -307,6 +406,12 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                   <span className="file-name">{avatarFile.name}</span>
                 )}
                 <span className="upload-hint">{t('upload.avatarHint')}</span>
+                {!user?.hasDmxBoost && (
+                  <span className="upload-hint" style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Rocket size={14} />
+                    {t('boost.gifAvatarHint')}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -315,40 +420,49 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
           {activeTab === 'appearance' && (
           <>
           <div className="settings-section">
-            <h3>{t('user.banner')}</h3>
-
-            <div className="form-group">
-              <div className="banner-upload-container">
-                {bannerPreview && (
-                  <div className="banner-preview">
-                    <img src={getImageUrl(bannerPreview)} alt="Banner preview" onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }} />
-                  </div>
-                )}
+            {/* Custom background image upload — locked without boost */}
+            <div className={`form-group${!user?.hasDmxBoost ? ' boost-feature boost-locked' : ''}`} style={{ position: 'relative' }}>
+              {!user?.hasDmxBoost && (
+                <div className="boost-lock-overlay">
+                  <Lock size={20} />
+                  <span>{t('boost.requiresBoost')}</span>
+                </div>
+              )}
+              <label>
+                <Upload size={16} />
+                {t('user.customBgUpload')}
+              </label>
+              <div className="bg-upload-row">
                 <input
-                  ref={bannerFileInputRef}
-                  id="banner"
+                  ref={customBgFileInputRef}
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  onChange={handleBannerChange}
-                  disabled={loading}
+                  onChange={handleCustomBgChange}
+                  disabled={!user?.hasDmxBoost}
                   style={{ display: 'none' }}
                 />
                 <button
                   type="button"
                   className="upload-button"
-                  onClick={() => bannerFileInputRef.current?.click()}
-                  disabled={loading}
+                  onClick={() => customBgFileInputRef.current?.click()}
+                  disabled={!user?.hasDmxBoost}
                 >
-                  <Upload size={18} />
-                  {bannerFile ? t('user.changeFile') : t('user.selectFile')}
+                  <Upload size={16} />
+                  {customBg ? t('user.changeFile') : t('user.selectFile')}
                 </button>
-                {bannerFile && (
-                  <span className="file-name">{bannerFile.name}</span>
+                {customBg && (
+                  <button
+                    type="button"
+                    className="upload-button"
+                    onClick={handleClearCustomBg}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <ImageOff size={16} />
+                    {t('user.clearCustomBg')}
+                  </button>
                 )}
-                <span className="upload-hint">{t('upload.bannerHint')}</span>
               </div>
+              <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>{t('user.customBgHint')}</small>
             </div>
 
             {/* Background blur slider + live preview */}
@@ -378,9 +492,10 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
               <div
                 className="blur-preview-bg"
                 style={{
-                  backgroundImage: bannerPreview
-                    ? `url(${getImageUrl(bannerPreview)})`
-                    : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                  ...(customBg
+                    ? { backgroundImage: `url(${customBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }
+                  ),
                   filter: `blur(${(bgBlur / 100) * 20}px)`,
                   transform: 'scale(1.08)',
                 }}
@@ -471,28 +586,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
               </div>
             </div>
 
-            {/* Accent colour picker */}
-            <div className="form-group">
-              <label>
-                <Palette size={16} />
-                {t('user.accentColor')}
-              </label>
-              <div className="accent-colors-grid">
-                {ACCENT_COLORS.map(c => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    title={c.label}
-                    className={`accent-color-swatch${accentColor === c.value ? ' selected' : ''}`}
-                    style={{ '--swatch-color': c.value, '--swatch-shadow': c.shadow } as React.CSSProperties}
-                    onClick={() => handleAccentChange(c)}
-                  />
-                ))}
-              </div>
-              <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>
-                {t('user.accentColorHint')}
-              </small>
-            </div>
+            {/* Accent colour picker — moved to DMX Boost tab */}
 
             {/* Remove background */}
             <div className="form-group">
@@ -517,6 +611,168 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
 
           </div>
           </>)}
+
+          {activeTab === 'boost' && (
+          <>
+            {/* Purchase / boost status card */}
+            <div className="boost-hero-card">
+              <div className="boost-hero-bg" />
+              <div className="boost-hero-content">
+                <div className="boost-hero-icon"><Rocket size={36} /></div>
+                <div className="boost-hero-text">
+                  {user?.hasDmxBoost ? (
+                    <>
+                      <h3>{t('boost.active')}</h3>
+                      {user.dmxBoostExpiresAt && (
+                        <p>{t('boost.expiresOn', { date: new Date(user.dmxBoostExpiresAt).toLocaleDateString() })}</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h3>DMX Boost</h3>
+                      <p>{t('boost.tagline')}</p>
+                    </>
+                  )}
+                </div>
+                {!user?.hasDmxBoost && (
+                  <button
+                    type="button"
+                    className="boost-buy-btn"
+                    onClick={handleBoostPurchase}
+                    disabled={boostLoading}
+                  >
+                    <Rocket size={18} />
+                    {boostLoading ? t('boost.loading') : t('boost.buy')}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Banner upload — locked without boost */}
+            <div className={`settings-section boost-feature${!user?.hasDmxBoost ? ' boost-locked' : ''}`}>
+              {!user?.hasDmxBoost && (
+                <div className="boost-lock-overlay">
+                  <Lock size={20} />
+                  <span>{t('boost.requiresBoost')}</span>
+                </div>
+              )}
+              <h3>
+                <Upload size={16} style={{ display: 'inline', marginRight: 6 }} />
+                {t('boost.accountBanner')}
+              </h3>
+              {/* Profile card preview */}
+              <div className="profile-banner-card-preview">
+                <div
+                  className="profile-banner-card-strip"
+                  style={bannerPreview
+                    ? { backgroundImage: `url(${getImageUrl(bannerPreview)})` }
+                    : { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }
+                  }
+                />
+                <div className="profile-banner-card-avatar">
+                  {user?.avatar
+                    ? <img src={getImageUrl(user.avatar)} alt={user.username} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    : <span>{user?.username?.[0]?.toUpperCase() ?? '?'}</span>
+                  }
+                </div>
+                <div className="profile-banner-card-name">{user?.username}</div>
+              </div>
+
+              <div className="form-group">
+                <div className="banner-upload-container">
+                  {false && null /* preview now shown above */}
+                  <input
+                    ref={bannerFileInputRef}
+                    id="banner"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleBannerChange}
+                    disabled={loading || !user?.hasDmxBoost}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    className="upload-button"
+                    onClick={() => bannerFileInputRef.current?.click()}
+                    disabled={loading || !user?.hasDmxBoost}
+                  >
+                    <Upload size={18} />
+                    {bannerFile ? t('user.changeFile') : t('user.selectFile')}
+                  </button>
+                  {bannerFile && <span className="file-name">{bannerFile.name}</span>}
+                  <span className="upload-hint">{t('upload.bannerHint')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Accent colour picker — locked without boost */}
+            <div className={`settings-section boost-feature${!user?.hasDmxBoost ? ' boost-locked' : ''}`}>
+              {!user?.hasDmxBoost && (
+                <div className="boost-lock-overlay">
+                  <Lock size={20} />
+                  <span>{t('boost.requiresBoost')}</span>
+                </div>
+              )}
+              <h3>
+                <Palette size={16} style={{ display: 'inline', marginRight: 6 }} />
+                {t('user.accentColor')}
+              </h3>
+              <div className="form-group">
+                <div className="accent-colors-grid">
+                  {ACCENT_COLORS.map(c => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      title={c.label}
+                      className={`accent-color-swatch${accentColor === c.value ? ' selected' : ''}`}
+                      style={{ '--swatch-color': c.value, '--swatch-shadow': c.shadow } as React.CSSProperties}
+                      onClick={() => user?.hasDmxBoost && handleAccentChange(c)}
+                      disabled={!user?.hasDmxBoost}
+                    />
+                  ))}
+                </div>
+                <small style={{ color: 'var(--text-muted)', marginTop: 4 }}>
+                  {t('user.accentColorHint')}
+                </small>
+              </div>
+            </div>
+
+            {/* Redeem Code */}
+            <div className="settings-section boost-redeem-section">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                {t('boost.redeemCode')}
+              </h3>
+              <div className="boost-redeem-row">
+                <input
+                  type="text"
+                  className="boost-code-input"
+                  placeholder={t('boost.redeemPlaceholder')}
+                  value={boostCode}
+                  onChange={e => { setBoostCode(e.target.value.toUpperCase()); setBoostCodeResult(null); }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleRedeemCode(); } }}
+                  disabled={boostCodeLoading}
+                  maxLength={14}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="boost-redeem-btn"
+                  onClick={handleRedeemCode}
+                  disabled={boostCodeLoading || !boostCode.trim()}
+                >
+                  {boostCodeLoading ? t('boost.loading') : t('boost.redeemBtn')}
+                </button>
+              </div>
+              {boostCodeResult && (
+                <div className={`boost-redeem-result boost-redeem-result--${boostCodeResult.ok ? 'ok' : 'err'}`}>
+                  {boostCodeResult.ok ? '✅' : '❌'} {boostCodeResult.msg}
+                </div>
+              )}
+            </div>
+          </>
+          )}
 
           {activeTab === 'account' && (<>
             <div className="account-status-section">
@@ -655,6 +911,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
 
           {error && <div className="error-message">{error}</div>}
 
+          {(activeTab === 'profile' || activeTab === 'appearance') && (
           <div className="modal-actions">
             <button type="button" onClick={onClose} className="cancel-button" disabled={loading}>
               {t('user.cancel')}
@@ -663,6 +920,7 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
               {loading ? t('user.saving') : t('user.save')}
             </button>
           </div>
+          )}
         </form>
       </div>
     </div>

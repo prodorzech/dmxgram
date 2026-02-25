@@ -22,6 +22,16 @@ export function getSupabase(): any {
 // ─── Row mappers (snake_case DB → camelCase TS) ──────────────────────────────
 
 function rowToUser(row: any): User {
+  // If last_online is missing or stale (>3 min), treat online/away as offline.
+  // This ensures a crashed/closed machine shows offline within 3 minutes.
+  const STALE_MS = 3 * 60 * 1000;
+  let dbStatus: string = row.status || 'offline';
+  if (dbStatus === 'online' || dbStatus === 'away') {
+    const lastOnline: Date | null = row.last_online ? new Date(row.last_online) : null;
+    if (!lastOnline || (Date.now() - lastOnline.getTime()) > STALE_MS) {
+      dbStatus = 'offline';
+    }
+  }
   return {
     id: row.id,
     username: row.username,
@@ -32,7 +42,7 @@ function rowToUser(row: any): User {
     bio: row.bio ?? undefined,
     customStatus: row.custom_status ?? undefined,
     createdAt: new Date(row.created_at),
-    status: row.status || 'offline',
+    status: dbStatus as User['status'],
     isAdmin: row.is_admin || false,
     mustChangePassword: row.must_change_password || false,
     lastLoginIp: row.last_login_ip ?? undefined,
@@ -43,6 +53,8 @@ function rowToUser(row: any): User {
     activeRestrictions: row.active_restrictions || [],
     badges: row.badges || [],
     emailVerified: row.email_verified ?? false,
+    hasDmxBoost: row.has_dmx_boost ?? false,
+    dmxBoostExpiresAt: row.dmx_boost_expires_at ? new Date(row.dmx_boost_expires_at) : undefined,
     emailVerificationCode: row.email_verification_code ?? undefined,
     emailVerificationExpires: row.email_verification_expires ? new Date(row.email_verification_expires) : undefined,
   };
@@ -203,7 +215,13 @@ export class Database {
     if (user.emailVerified !== undefined) {
       insertRow.email_verified = user.emailVerified;
     }
-    const { error } = await getSupabase().from('users').insert(insertRow);
+    let { error } = await getSupabase().from('users').insert(insertRow);
+    // If the email_verified column doesn't exist in the schema yet, retry without it
+    if (error && (error.code === 'PGRST204' || (error.message || '').includes('email_verified'))) {
+      delete insertRow.email_verified;
+      const { error: error2 } = await getSupabase().from('users').insert(insertRow);
+      error = error2;
+    }
     if (error) throw error;
     return user;
   }
@@ -249,6 +267,22 @@ export class Database {
 
   updateUserStatus(userId: string, status: User['status']): void {
     this.statusCache.set(userId, status);
+    // Write to Supabase so all other users' servers see the correct status.
+    // last_online is set to NOW when online/away, cleared to NULL when offline.
+    const lastOnline = (status === 'online' || status === 'away')
+      ? new Date().toISOString()
+      : null;
+    getSupabase()
+      .from('users')
+      .update({ status, last_online: lastOnline })
+      .eq('id', userId)
+      .then(() => {})
+      .catch((err: any) => console.error('updateUserStatus DB write failed:', err));
+  }
+
+  /** Read the cached status for a locally connected user (for heartbeat use). */
+  getStatusFromCache(userId: string): User['status'] | undefined {
+    return this.statusCache.get(userId) as User['status'] | undefined;
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -284,18 +318,50 @@ export class Database {
     if (updates.activeRestrictions !== undefined) dbUpdates.active_restrictions = updates.activeRestrictions;
     if (updates.badges !== undefined) dbUpdates.badges = updates.badges;
     if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
+    if ((updates as any).hasDmxBoost !== undefined) dbUpdates.has_dmx_boost = (updates as any).hasDmxBoost;
+    if ((updates as any).dmxBoostExpiresAt !== undefined) dbUpdates.dmx_boost_expires_at = (updates as any).dmxBoostExpiresAt ? (updates as any).dmxBoostExpiresAt.toISOString() : null;
     if (updates.emailVerificationCode !== undefined) dbUpdates.email_verification_code = updates.emailVerificationCode;
     if (updates.emailVerificationExpires !== undefined) dbUpdates.email_verification_expires = updates.emailVerificationExpires?.toISOString() ?? null;
 
-    const { data, error } = await getSupabase()
+    let { data, error } = await getSupabase()
       .from('users')
       .update(dbUpdates)
       .eq('id', userId)
       .select()
       .maybeSingle();
+
+    // If boost columns don't exist yet, throw a clear migration error
+    if (error && (error.message || '').toLowerCase().includes('has_dmx_boost')) {
+      console.error('❌ has_dmx_boost column missing! Run server/src/database/users_boost_migration.sql in Supabase.');
+      throw new Error('missingBoostColumns');
+    }
+
     if (error) throw error;
     if (!data) return null;
     return rowToUser(data);
+  }
+
+  // Revoke boost for all users whose dmx_boost_expires_at is in the past
+  async revokeExpiredBoosts(): Promise<number> {
+    const now = new Date().toISOString();
+    // Find expired users
+    const { data, error } = await getSupabase()
+      .from('users')
+      .select('id, badges')
+      .eq('has_dmx_boost', true)
+      .lt('dmx_boost_expires_at', now);
+    if (error) throw error;
+    if (!data || data.length === 0) return 0;
+
+    for (const row of data) {
+      const badges: string[] = (row.badges || []).filter((b: string) => b !== 'dmx-boost');
+      await getSupabase().from('users').update({
+        has_dmx_boost: false,
+        dmx_boost_expires_at: null,
+        badges,
+      }).eq('id', row.id);
+    }
+    return data.length;
   }
 
   // ── Servers ────────────────────────────────────────────────────────────────
@@ -777,6 +843,15 @@ export class Database {
     this.userSessions.delete(socketId);
   }
 
+  /** Returns how many active sockets this user still has after a disconnect. */
+  countActiveSessions(userId: string): number {
+    let count = 0;
+    for (const uid of this.userSessions.values()) {
+      if (uid === userId) count++;
+    }
+    return count;
+  }
+
   // ── Reports ────────────────────────────────────────────────────────────────
 
   async createReport(report: {
@@ -931,20 +1006,60 @@ export class Database {
   async initialize(): Promise<void> {
     console.log('🔌 Connecting to Supabase...');
 
-    // Ensure user_blocks table exists
+    // Probe for user_blocks table — it's created via the Supabase dashboard migration.
+    // Block/unblock methods already return safe defaults on error, so we just warn here.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (getSupabase() as any).sql`
-        CREATE TABLE IF NOT EXISTS user_blocks (
-          blocker_id UUID NOT NULL,
-          blocked_id UUID NOT NULL,
-          created_at TIMESTAMPTZ DEFAULT NOW(),
-          PRIMARY KEY (blocker_id, blocked_id)
-        )
-      `;
-      console.log('✅ user_blocks table ready');
+      const { error } = await getSupabase().from('user_blocks').select('blocker_id').limit(1);
+      if (error && (error.code === '42P01' || (error.message || '').includes('user_blocks'))) {
+        console.warn('⚠️  user_blocks table missing — run migration: CREATE TABLE user_blocks (blocker_id UUID, blocked_id UUID, created_at TIMESTAMPTZ DEFAULT NOW(), PRIMARY KEY (blocker_id, blocked_id))');
+      } else {
+        console.log('✅ user_blocks table ready');
+      }
     } catch (e) {
-      console.warn('⚠️  Could not auto-create user_blocks table (run migration manually):', e);
+      console.warn('⚠️  Could not probe user_blocks table:', e);
+    }
+
+    // Probe for boost_codes tables — created via boost_codes_migration.sql
+    try {
+      const { error: bcErr } = await getSupabase().from('boost_codes').select('code').limit(1);
+      if (bcErr && (bcErr.code === '42P01' || (bcErr.message || '').includes('boost_codes'))) {
+        console.warn('⚠️  boost_codes table MISSING — please run server/src/database/boost_codes_migration.sql in your Supabase SQL editor!');
+        console.warn('    SQL:\n    CREATE TABLE IF NOT EXISTS boost_codes (code TEXT PRIMARY KEY, duration_days INTEGER NOT NULL, max_uses INTEGER NOT NULL DEFAULT 1, uses_left INTEGER NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), note TEXT);\n    CREATE TABLE IF NOT EXISTS boost_code_uses (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), code TEXT NOT NULL REFERENCES boost_codes(code) ON DELETE CASCADE, user_id TEXT NOT NULL, username TEXT NOT NULL, used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE (code, user_id));');
+      } else {
+        console.log('✅ boost_codes table ready');
+      }
+    } catch (e) {
+      console.warn('⚠️  Could not probe boost_codes table:', e);
+    }
+
+    // Probe for has_dmx_boost column in users — added via users_boost_migration.sql
+    try {
+      const { data: boostProbe, error: boostColErr } = await getSupabase()
+        .from('users')
+        .select('has_dmx_boost')
+        .limit(1);
+      if (boostColErr && (boostColErr.message || '').toLowerCase().includes('has_dmx_boost')) {
+        console.warn('⚠️  has_dmx_boost column MISSING from users table — please run server/src/database/users_boost_migration.sql in your Supabase SQL editor!');
+      } else {
+        console.log('✅ users boost columns ready');
+      }
+    } catch (e) {
+      console.warn('⚠️  Could not probe users boost columns:', e);
+    }
+
+    // Probe for last_online column in users — added via last_online_migration.sql
+    try {
+      const { error: loErr } = await getSupabase()
+        .from('users')
+        .select('last_online')
+        .limit(1);
+      if (loErr && (loErr.message || '').toLowerCase().includes('last_online')) {
+        console.warn('⚠️  last_online column MISSING from users table — online status will be stale. Run server/src/database/last_online_migration.sql in Supabase!');
+      } else {
+        console.log('✅ last_online column ready (stale-status detection active)');
+      }
+    } catch (e) {
+      console.warn('⚠️  Could not probe last_online column:', e);
     }
 
     const adminEmail = 'orzech@dmx.suko';

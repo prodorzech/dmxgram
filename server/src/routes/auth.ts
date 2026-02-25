@@ -11,7 +11,16 @@ import { getIO } from '../socket';
 
 const router: Router = express.Router();
 
-// In-memory store for pending email verifications (avoids need for DB columns)
+// ── JWT secret helper ──────────────────────────────────────────────────────
+const jwtSecret = (): string => {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error('JWT_SECRET environment variable is not set');
+  return s;
+};
+
+// ── In-memory pending email verifications ─────────────────────────────────
+// Max 1000 slots to prevent memory exhaustion (each slot ≈ 256 bytes)
+const MAX_PENDING = 1000;
 const pendingVerifications = new Map<string, {
   code: string;
   username: string;
@@ -37,16 +46,32 @@ const serializeUser = (user: User) => ({
   restrictions: user.restrictions,
   warnings: user.warnings,
   activeRestrictions: user.activeRestrictions,
-  badges: user.badges || []
+  badges: user.badges || [],
+  hasDmxBoost: user.hasDmxBoost ?? false,
+  dmxBoostExpiresAt: user.dmxBoostExpiresAt ?? undefined,
 });
 
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    let { username, email, password } = req.body;
+
+    // Sanitize
+    username = (username || '').trim();
+    email    = (email    || '').trim().toLowerCase();
+    password = (password || '');
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Wszystkie pola są wymagane' });
+    }
+    if (username.length > 32) {
+      return res.status(400).json({ error: 'Nazwa użytkownika może mieć maksymalnie 32 znaki' });
+    }
+    if (email.length > 254) {
+      return res.status(400).json({ error: 'Nieprawidłowy adres email' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Nieprawidłowy adres email' });
     }
 
     // Validate password
@@ -78,7 +103,20 @@ router.post('/register', async (req, res) => {
     }
 
     if (emailSent) {
-      pendingVerifications.set(email, {
+      // Throttle: don't allow memory exhaustion of pendingVerifications
+    if (pendingVerifications.size >= MAX_PENDING) {
+      // Evict oldest expired entries first
+      for (const [k, v] of pendingVerifications) {
+        if (Date.now() > v.expires) pendingVerifications.delete(k);
+        if (pendingVerifications.size < MAX_PENDING) break;
+      }
+      // If still full, reject
+      if (pendingVerifications.size >= MAX_PENDING) {
+        return res.status(429).json({ error: 'Serwer jest tymczasowo przeciążony. Spróbuj za chwilę.' });
+      }
+    }
+
+    pendingVerifications.set(email, {
         code,
         username,
         email,
@@ -113,7 +151,7 @@ router.post('/register', async (req, res) => {
 
     await db.createUser(newUser);
 
-    const token = jwt.sign({ userId }, process.env.JWT_SECRET || 'dmxgram_super_secret_key_2024', { expiresIn: '7d' });
+    const token = jwt.sign({ userId }, jwtSecret(), { expiresIn: '7d' });
     res.status(201).json({ token, user: serializeUser(newUser) });
   } catch (error) {
     console.error('Register error:', error);
@@ -153,7 +191,7 @@ router.post('/verify-email', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'secret',
+      jwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -190,7 +228,11 @@ router.post('/resend-verification', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    // Sanitize
+    email    = (email    || '').trim().toLowerCase();
+    password = (password || '');
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email i hasło są wymagane' });
@@ -221,7 +263,7 @@ router.post('/login', async (req, res) => {
     // Generate token
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'secret',
+      jwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -267,7 +309,14 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     if (avatar !== undefined) updates.avatar = avatar;
-    if (banner !== undefined) updates.banner = banner;
+    if (banner !== undefined) {
+      // Banner requires DMX Boost — reject if user doesn't have it
+      const currentUser = await db.getUserById(req.userId!);
+      if (!currentUser?.hasDmxBoost) {
+        return res.status(403).json({ error: 'Baner profilowy wymaga DMX Boost' });
+      }
+      updates.banner = banner;
+    }
     if (bio !== undefined) updates.bio = bio;
 
     const updatedUser = await db.updateUser(req.userId!, updates);

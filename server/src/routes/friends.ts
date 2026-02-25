@@ -226,6 +226,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       username: friend.username,
       avatar: friend.avatar,
       bio: friend.bio,
+      banner: friend.banner,
       status: friend.status,
       badges: friend.badges || [],
     }));

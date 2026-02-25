@@ -35,6 +35,8 @@ export interface User {
   warnings?: UserRestriction[];
   activeRestrictions?: UserRestriction[];
   badges?: string[];
+  hasDmxBoost?: boolean;
+  dmxBoostExpiresAt?: Date;
   emailVerified?: boolean;
   emailVerificationCode?: string;
   emailVerificationExpires?: Date;

@@ -1,0 +1,245 @@
+.forward-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.forward-modal {
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color, #3a3a3a);
+  border-radius: 14px;
+  padding: 20px;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.forward-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary, #f0f0f0);
+}
+
+.forward-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.forward-modal-header svg {
+  color: var(--accent-primary, #dc2626);
+}
+
+.forward-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #9ca3af);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.forward-modal-close:hover {
+  background: var(--bg-hover, #2a2a2a);
+  color: var(--text-primary, #f0f0f0);
+}
+
+/* Search */
+.forward-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.forward-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-secondary, #9ca3af);
+  pointer-events: none;
+}
+
+.forward-search-input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  background: var(--bg-primary, #141414);
+  border: 1px solid var(--border-color, #3a3a3a);
+  border-radius: 8px;
+  color: var(--text-primary, #f0f0f0);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.forward-search-input:focus {
+  border-color: var(--accent-primary, #dc2626);
+}
+
+.forward-search-input::placeholder {
+  color: var(--text-secondary, #666);
+}
+
+/* Friends list */
+.forward-friends-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.forward-friends-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.forward-friends-list::-webkit-scrollbar-thumb {
+  background: var(--border-color, #3a3a3a);
+  border-radius: 3px;
+}
+
+.forward-no-friends {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary, #9ca3af);
+  font-size: 14px;
+}
+
+/* Friend item */
+.forward-friend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.forward-friend-item:hover {
+  background: var(--bg-hover, #2a2a2a);
+}
+
+.forward-friend-item.selected {
+  background: color-mix(in srgb, var(--accent-primary, #dc2626) 12%, transparent);
+}
+
+/* Avatar */
+.forward-friend-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.forward-friend-avatar img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.forward-avatar-initial {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-primary, #dc2626);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.forward-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary, #1e1e1e);
+  background: #6b7280;
+}
+
+.forward-status-dot.online {
+  background: #22c55e;
+}
+
+.forward-status-dot.away {
+  background: #f59e0b;
+}
+
+.forward-status-dot.offline {
+  background: #6b7280;
+}
+
+/* Username */
+.forward-friend-name {
+  flex: 1;
+  color: var(--text-primary, #f0f0f0);
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Checkbox */
+.forward-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 2px solid var(--border-color, #3a3a3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.forward-checkbox.checked {
+  background: var(--accent-primary, #dc2626);
+  border-color: var(--accent-primary, #dc2626);
+  color: #fff;
+}
+
+/* Send button */
+.forward-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--accent-primary, #dc2626);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.forward-send-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.forward-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

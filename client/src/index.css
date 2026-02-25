@@ -10,6 +10,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
+  background: #1a1a1a;
 }
 
 body {
@@ -18,8 +19,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--bg-primary, #1a1a1a);
+  color: var(--text-primary, #ffffff);
   overflow: hidden;
 }
 

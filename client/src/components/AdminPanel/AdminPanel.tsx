@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Mail, Shield, X, Ban, CheckCircle, Settings, Flag, MessageSquare, Eye, Clock } from 'lucide-react';
+import { Users, Mail, Shield, X, Ban, CheckCircle, Settings, Flag, MessageSquare, Eye, Clock, Gift, Copy, Trash2, Rocket } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { useUI } from '../../context/UIContext';
@@ -55,7 +55,7 @@ export function AdminPanel() {
   const { user, token } = useStore();
   const { toast } = useUI();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'users' | 'reports'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'reports' | 'boost'>('users');
 
   // Users tab state
   const [users, setUsers] = useState<UserData[]>([]);
@@ -72,15 +72,68 @@ export function AdminPanel() {
   const [convLoading, setConvLoading] = useState(false);
   const [showConvModal, setShowConvModal] = useState(false);
 
+  // Boost Codes tab state
+  const [boostCodes, setBoostCodes] = useState<any[]>([]);
+  const [boostCodesLoading, setBoostCodesLoading] = useState(false);
+  const [newDuration, setNewDuration] = useState(30);
+  const [newMaxUses, setNewMaxUses] = useState(1);
+  const [newNote, setNewNote] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [lastGeneratedCode, setLastGeneratedCode] = useState<any | null>(null);
+
   useEffect(() => {
     loadUsers();
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'reports') {
-      loadReports();
-    }
+    if (activeTab === 'reports') loadReports();
+    if (activeTab === 'boost') loadBoostCodes();
   }, [activeTab]);
+
+  const loadBoostCodes = async () => {
+    if (!token) return;
+    setBoostCodesLoading(true);
+    try {
+      const data = await api.getAdminBoostCodes(token);
+      setBoostCodes(data);
+    } catch (e: any) {
+      toast(e.message || 'Error loading codes', 'error');
+    } finally {
+      setBoostCodesLoading(false);
+    }
+  };
+
+  const handleGenerateCode = async () => {
+    if (!token) return;
+    setGeneratingCode(true);
+    try {
+      const code = await api.createAdminBoostCode(newDuration, newMaxUses, newNote, token);
+      setLastGeneratedCode(code);
+      setBoostCodes(prev => [code, ...prev]);
+      setNewNote('');
+      toast(t('admin.codeGenerated'), 'success');
+    } catch (e: any) {
+      toast(e.message || 'Error', 'error');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
+  const handleDeleteCode = async (code: string) => {
+    if (!token) return;
+    try {
+      await api.deleteAdminBoostCode(code, token);
+      setBoostCodes(prev => prev.filter(c => c.code !== code));
+      if (lastGeneratedCode?.code === code) setLastGeneratedCode(null);
+      toast(t('admin.codeDeleted'), 'success');
+    } catch (e: any) {
+      toast(e.message || 'Error', 'error');
+    }
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => toast(t('admin.codeCopied'), 'success')).catch(() => {});
+  };
 
   const loadUsers = async () => {
     if (!token) return;
@@ -242,6 +295,13 @@ export function AdminPanel() {
           <Flag size={16} />
           {t('admin.reports')}
           {pendingCount > 0 && <span className="tab-badge">{pendingCount}</span>}
+        </button>
+        <button
+          className={`admin-tab${activeTab === 'boost' ? ' active' : ''}`}
+          onClick={() => setActiveTab('boost')}
+        >
+          <Gift size={16} />
+          {t('admin.boostCodes')}
         </button>
       </div>
 
@@ -448,6 +508,120 @@ export function AdminPanel() {
                 </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Boost Codes Tab */}
+      {activeTab === 'boost' && (
+        <div className="admin-content">
+          <h2 className="section-title">
+            <Gift size={20} />
+            {t('admin.boostCodes')}
+          </h2>
+
+          {/* Generate form */}
+          <div className="boost-code-generate-card">
+            <h3><Rocket size={16} style={{ display: 'inline', marginRight: 6 }} />{t('admin.generateCode')}</h3>
+            <div className="boost-code-form-row">
+              <div className="boost-code-field">
+                <label>{t('admin.codeDuration')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={newDuration}
+                  onChange={e => setNewDuration(Number(e.target.value))}
+                  className="boost-code-input-field"
+                />
+                <small>{t('admin.codeDurationHint')}</small>
+              </div>
+              <div className="boost-code-field">
+                <label>{t('admin.codeMaxUses')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={newMaxUses}
+                  onChange={e => setNewMaxUses(Number(e.target.value))}
+                  className="boost-code-input-field"
+                />
+                <small>{t('admin.codeMaxUsesHint')}</small>
+              </div>
+              <div className="boost-code-field boost-code-field--note">
+                <label>{t('admin.codeNote')}</label>
+                <input
+                  type="text"
+                  value={newNote}
+                  onChange={e => setNewNote(e.target.value)}
+                  placeholder={t('admin.codeNotePlaceholder')}
+                  className="boost-code-input-field"
+                />
+              </div>
+            </div>
+            <button
+              className="boost-generate-btn"
+              onClick={handleGenerateCode}
+              disabled={generatingCode || newDuration < 1}
+            >
+              <Gift size={16} />
+              {generatingCode ? t('admin.generating') : t('admin.generateBtn')}
+            </button>
+
+            {lastGeneratedCode && (
+              <div className="boost-code-result">
+                <span className="boost-code-result-label">{t('admin.codeGenerated')}:</span>
+                <code className="boost-code-value">{lastGeneratedCode.code}</code>
+                <button className="boost-code-copy-btn" onClick={() => copyCode(lastGeneratedCode.code)} title={t('admin.codeCopy')}>
+                  <Copy size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Codes list */}
+          <div className="boost-codes-list-header">
+            <h3>{t('admin.allCodes')} ({boostCodes.length})</h3>
+            <button className="refresh-btn" onClick={loadBoostCodes} disabled={boostCodesLoading} title={t('admin.refresh')}>
+              ↻
+            </button>
+          </div>
+
+          {boostCodesLoading ? (
+            <div className="loading-state"><div className="spinner"></div></div>
+          ) : boostCodes.length === 0 ? (
+            <div className="empty-reports">
+              <Gift size={40} />
+              <p>{t('admin.noBoostCodes')}</p>
+            </div>
+          ) : (
+            <div className="boost-codes-table">
+              {boostCodes.map(entry => (
+                <div key={entry.code} className={`boost-code-row${entry.usesLeft === 0 ? ' exhausted' : ''}`}>
+                  <div className="boost-code-row-code">
+                    <code>{entry.code}</code>
+                    <button className="boost-code-copy-btn-sm" onClick={() => copyCode(entry.code)} title={t('admin.codeCopy')}>
+                      <Copy size={12} />
+                    </button>
+                  </div>
+                  <div className="boost-code-row-meta">
+                    <span className="boost-meta-tag"><Rocket size={12} />{entry.durationDays}d</span>
+                    <span className={`boost-meta-tag${entry.usesLeft === 0 ? ' used' : ''}`}>
+                      {entry.usesLeft}/{entry.maxUses} {t('admin.codeUsesLeft')}
+                    </span>
+                    {entry.note && <span className="boost-meta-note">{entry.note}</span>}
+                  </div>
+                  {entry.usedBy?.length > 0 && (
+                    <div className="boost-code-used-by">
+                      {entry.usedBy.map((u: any) => (
+                        <span key={u.userId} className="boost-used-user">{u.username}</span>
+                      ))}
+                    </div>
+                  )}
+                  <button className="boost-code-delete-btn" onClick={() => handleDeleteCode(entry.code)} title={t('admin.codeDelete')}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
