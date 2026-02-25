@@ -271,11 +271,7 @@ export function CallOverlay() {
         }
       }, 180000);
 
-      // Play ringtone
-      if (ringtoneRef.current) {
-        ringtoneRef.current.currentTime = 0;
-        ringtoneRef.current.play().catch(() => {});
-      }
+      // Ringtone is handled by the callState useEffect
 
     } catch (err) {
       console.error('Failed to start call:', err);
@@ -475,18 +471,13 @@ export function CallOverlay() {
       }
 
       // Always show the incoming call UI regardless of PC errors
+      // Ringtone is handled by the callState useEffect
       useStore.getState().receiveIncomingCall({
         peerId: data.callerId,
         peerUsername: data.callerInfo.username,
         peerAvatar: data.callerInfo.avatar,
         callType: data.callType
       });
-
-      // Play ringtone for incoming call
-      if (ringtoneRef.current) {
-        ringtoneRef.current.currentTime = 0;
-        ringtoneRef.current.play().catch(() => {});
-      }
     };
 
     const handleAnswer = async (data: { answererId: string; answer: RTCSessionDescriptionInit }) => {
@@ -496,12 +487,7 @@ export function CallOverlay() {
 
       clearTimeout(ringTimeoutRef.current);
 
-      // Stop ringtone
-      if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-      }
-
+      // Ringtone is stopped by the callState useEffect when state becomes 'connected'
       callConnected();
 
       // Start timer
@@ -594,11 +580,7 @@ export function CallOverlay() {
     const pc = pcRef.current;
     if (!pc || !callInfo) return;
 
-    // Stop ringtone immediately
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
+    // Ringtone is stopped by callState useEffect when state becomes 'connected'
 
     try {
       const stream = await getUserMedia(callInfo.callType === 'video');
@@ -642,20 +624,45 @@ export function CallOverlay() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callInfo, getUserMedia, setupSpeakingDetection, callConnected, rejectCall]);
 
+  /* ── Ringtone playback — driven by callState changes ── */
+  useEffect(() => {
+    const audio = ringtoneRef.current;
+    if (!audio) return;
+
+    if (callState === 'incoming' || callState === 'outgoing') {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [callState]);
+
   /* ══════════════════════════════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════════════════════════════ */
-  if (callState === 'idle' || !callInfo) return null;
+
+  // Always render audio elements so refs are never null
+  const audioElements = (
+    <>
+      <audio ref={remoteAudioRef} autoPlay style={{ display: 'none' }} />
+      <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" style={{ display: 'none' }} />
+    </>
+  );
+
+  if (callState === 'idle' || !callInfo) return audioElements;
 
   const peerAvatar = callInfo.peerAvatar ? getImageUrl(callInfo.peerAvatar) : null;
   const myAvatar = user?.avatar ? getImageUrl(user.avatar) : null;
 
   return (
     <div className={`call-overlay ${callState}`}>
-      {/* Hidden audio element for remote audio */}
-      <audio ref={remoteAudioRef} autoPlay />
-      {/* Ringtone audio (looped) */}
-      <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" />
+      {audioElements}
 
       {/* ── RINGING / OUTGOING ── */}
       {(callState === 'outgoing' || callState === 'incoming') && (
