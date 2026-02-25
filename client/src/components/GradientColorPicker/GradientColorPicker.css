@@ -1,0 +1,176 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRADIENT COLOR PICKER — Custom Discord-style colour picker
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gradient-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── The two pickers (Top / Bottom) side by side ───────────────────────── */
+.gradient-picker-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.gradient-picker-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.gradient-picker-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+/* ── Saturation/Brightness panel ───────────────────────────────────────── */
+.color-picker-saturation {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.5;
+  border-radius: 8px;
+  cursor: crosshair;
+  overflow: hidden;
+  border: 2px solid var(--border-primary, rgba(255,255,255,0.08));
+}
+
+.color-picker-saturation-white {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #ffffff, transparent);
+}
+
+.color-picker-saturation-black {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, #000000);
+}
+
+.color-picker-saturation-cursor {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Hue slider ────────────────────────────────────────────────────────── */
+.color-picker-hue-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(to right,
+    #ff0000 0%,
+    #ffff00 17%,
+    #00ff00 33%,
+    #00ffff 50%,
+    #0000ff 67%,
+    #ff00ff 83%,
+    #ff0000 100%
+  );
+  cursor: pointer;
+  border: 2px solid var(--border-primary, rgba(255,255,255,0.08));
+}
+
+.color-picker-hue-thumb {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Hex input row ─────────────────────────────────────────────────────── */
+.color-picker-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-picker-swatch-preview {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 2px solid var(--border-primary, rgba(255,255,255,0.08));
+  flex-shrink: 0;
+}
+
+.color-picker-hex-input {
+  flex: 1;
+  height: 34px;
+  background: var(--bg-tertiary, #1e1f22);
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  border-radius: 6px;
+  color: var(--text-primary, #f2f3f5);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  padding: 0 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  text-transform: uppercase;
+}
+
+.color-picker-hex-input:focus {
+  border-color: var(--accent-primary);
+}
+
+/* ── Preset swatches ───────────────────────────────────────────────────── */
+.color-picker-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.color-picker-preset {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.color-picker-preset:hover {
+  transform: scale(1.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.color-picker-preset.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+/* ── Big gradient preview ──────────────────────────────────────────────── */
+.gradient-picker-preview {
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  border: 2px solid var(--border-primary, rgba(255,255,255,0.08));
+  transition: background 0.2s;
+}
+
+/* ── Disabled state ────────────────────────────────────────────────────── */
+.gradient-picker.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.4);
+}

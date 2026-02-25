@@ -10,6 +10,7 @@ import {
 import { getImageUrl } from '../../utils/imageUrl';
 import { languages } from '../../i18n';
 import { useTranslation } from 'react-i18next';
+import { GradientColorPicker } from '../GradientColorPicker/GradientColorPicker';
 import './UserSettingsModal.css';
 
 /* ── Custom Dropdown component ───────────────────────────────────────── */
@@ -742,27 +743,13 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                     {!user?.hasDmxBoost && <span className="boost-badge"><Lock size={12} /> DMX Boost</span>}
                   </h4>
                   <p className="settings-group-desc" style={{ marginBottom: 10 }}>Ustaw gradient kolorów na swoim profilu — jak na Discordzie.</p>
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Góra</label>
-                      <input type="color" value={profileColorTop}
-                        onChange={e => setProfileColorTop(e.target.value)}
-                        disabled={loading || !user?.hasDmxBoost}
-                        style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: user?.hasDmxBoost ? 'pointer' : 'not-allowed', background: 'transparent' }} />
-                    </div>
-                    <div style={{
-                      width: 60, height: 60, borderRadius: 10, flexShrink: 0,
-                      background: `linear-gradient(to bottom, ${profileColorTop}, ${profileColorBottom})`,
-                      border: '2px solid var(--border-primary)',
-                    }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                      <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Dół</label>
-                      <input type="color" value={profileColorBottom}
-                        onChange={e => setProfileColorBottom(e.target.value)}
-                        disabled={loading || !user?.hasDmxBoost}
-                        style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: user?.hasDmxBoost ? 'pointer' : 'not-allowed', background: 'transparent' }} />
-                    </div>
-                  </div>
+                  <GradientColorPicker
+                    colorTop={profileColorTop}
+                    colorBottom={profileColorBottom}
+                    onChangeTop={setProfileColorTop}
+                    onChangeBottom={setProfileColorBottom}
+                    disabled={loading || !user?.hasDmxBoost}
+                  />
                 </div>
 
                 <div className="settings-actions">
