@@ -42,8 +42,8 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(220, 38, 38, 0.12);
-  border: 2px solid rgba(220, 38, 38, 0.35);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;

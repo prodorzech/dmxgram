@@ -70,7 +70,7 @@
 .toast-warning .toast-icon { color: var(--warning); background: rgba(245,158,11,.15); }
 
 .toast-info { border-left: 3px solid var(--accent-primary); }
-.toast-info .toast-icon { color: var(--accent-primary); background: rgba(220,38,38,.15); }
+.toast-info .toast-icon { color: var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 15%, transparent); }
 
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(12px) scale(0.95); }

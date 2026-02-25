@@ -305,7 +305,7 @@
 }
 
 .message-text.own-bubble {
-  background: rgba(220, 38, 38, 0.18);
+  background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
   border-left: 2px solid var(--accent-primary);
 }
 
@@ -1318,12 +1318,12 @@
 }
 
 .reaction-bubble.own {
-  background: rgba(220, 38, 38, 0.22);
-  border-color: rgba(220, 38, 38, 0.55);
+  background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent-primary) 55%, transparent);
 }
 
 .reaction-bubble.own:hover {
-  background: rgba(220, 38, 38, 0.32);
+  background: color-mix(in srgb, var(--accent-primary) 32%, transparent);
 }
 
 .reaction-count {
