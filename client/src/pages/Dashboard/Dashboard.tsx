@@ -83,6 +83,13 @@ export function Dashboard() {
     }
   }, [user?.mustChangePassword]);
 
+  // Listen for "change password" request from settings modal
+  useEffect(() => {
+    const handler = () => setShowChangePassword(true);
+    window.addEventListener('dmx-open-change-password', handler);
+    return () => window.removeEventListener('dmx-open-change-password', handler);
+  }, []);
+
   const handlePasswordChanged = async () => {
     // Refresh user data after password change
     const token = localStorage.getItem('token');

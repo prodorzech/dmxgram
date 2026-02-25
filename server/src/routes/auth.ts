@@ -457,51 +457,5 @@ router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res)
     res.status(500).json({ error: 'Błąd serwera' });
   }
 });
-// Change password
-router.post('/me/change-password', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!newPassword) {
-      return res.status(400).json({ error: 'Nowe hasło jest wymagane' });
-    }
-
-    // Validate new password
-    const validation = validatePassword(newPassword);
-    if (!validation.isValid) {
-      return res.status(400).json({ error: validation.errors.join(', ') });
-    }
-
-    const user = await db.getUserById(req.userId!);
-    if (!user) {
-      return res.status(404).json({ error: 'Użytkownik nie znaleziony' });
-    }
-
-    // If user must change password, allow without current password verification
-    if (!user.mustChangePassword) {
-      // Normal password change requires current password
-      if (!currentPassword) {
-        return res.status(400).json({ error: 'Obecne hasło jest wymagane' });
-      }
-
-      const validPassword = await bcrypt.compare(currentPassword, user.password);
-      if (!validPassword) {
-        return res.status(401).json({ error: 'Nieprawidłowe obecne hasło' });
-      }
-    }
-
-    // Hash and update new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.updateUser(req.userId!, {
-      password: hashedPassword,
-      mustChangePassword: false
-    });
-
-    res.json({ success: true, message: 'Hasło zostało zmienione' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Błąd serwera' });
-  }
-});
 
 export default router;
