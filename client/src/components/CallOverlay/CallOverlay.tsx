@@ -39,6 +39,7 @@ export function CallOverlay() {
   const ringTimeoutRef = useRef<number>(0);
   const callDurationRef = useRef<number>(0);
   const systemMessageSentRef = useRef(false);
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
   /* ── State ── */
   const [isMuted, setIsMuted] = useState(false);
@@ -75,6 +76,12 @@ export function CallOverlay() {
   const cleanup = useCallback(() => {
     clearInterval(callTimerRef.current);
     clearTimeout(ringTimeoutRef.current);
+
+    // Stop ringtone
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
 
     if (localAnalyserRef.current) {
       cancelAnimationFrame(localAnalyserRef.current.anim);
@@ -238,7 +245,7 @@ export function CallOverlay() {
         }
       });
 
-      // Ring timeout — 45 seconds
+      // Ring timeout — 3 minutes
       ringTimeoutRef.current = window.setTimeout(() => {
         if (useStore.getState().callState === 'outgoing') {
           sendCallSystemMessage('missed');
@@ -246,7 +253,13 @@ export function CallOverlay() {
           cleanup();
           endCall();
         }
-      }, 45000);
+      }, 180000);
+
+      // Play ringtone
+      if (ringtoneRef.current) {
+        ringtoneRef.current.currentTime = 0;
+        ringtoneRef.current.play().catch(() => {});
+      }
 
     } catch (err) {
       console.error('Failed to start call:', err);
@@ -447,6 +460,12 @@ export function CallOverlay() {
         peerAvatar: data.callerInfo.avatar,
         callType: data.callType
       });
+
+      // Play ringtone for incoming call
+      if (ringtoneRef.current) {
+        ringtoneRef.current.currentTime = 0;
+        ringtoneRef.current.play().catch(() => {});
+      }
     };
 
     const handleAnswer = async (data: { answererId: string; answer: RTCSessionDescriptionInit }) => {
@@ -455,6 +474,13 @@ export function CallOverlay() {
       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
 
       clearTimeout(ringTimeoutRef.current);
+
+      // Stop ringtone
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
+
       callConnected();
 
       // Start timer
@@ -601,6 +627,8 @@ export function CallOverlay() {
     <div className={`call-overlay ${callState}`}>
       {/* Hidden audio element for remote audio */}
       <audio ref={remoteAudioRef} autoPlay />
+      {/* Ringtone audio (looped) */}
+      <audio ref={ringtoneRef} src="/ringtone.mp3" loop preload="auto" />
 
       {/* ── RINGING / OUTGOING ── */}
       {(callState === 'outgoing' || callState === 'incoming') && (
