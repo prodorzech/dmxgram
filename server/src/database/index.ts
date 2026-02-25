@@ -55,6 +55,8 @@ function rowToUser(row: any): User {
     emailVerified: row.email_verified ?? false,
     hasDmxBoost: row.has_dmx_boost ?? false,
     dmxBoostExpiresAt: row.dmx_boost_expires_at ? new Date(row.dmx_boost_expires_at) : undefined,
+    profileColorTop: row.profile_color_top ?? undefined,
+    profileColorBottom: row.profile_color_bottom ?? undefined,
     emailVerificationCode: row.email_verification_code ?? undefined,
     emailVerificationExpires: row.email_verification_expires ? new Date(row.email_verification_expires) : undefined,
   };
@@ -320,6 +322,8 @@ export class Database {
     if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
     if ((updates as any).hasDmxBoost !== undefined) dbUpdates.has_dmx_boost = (updates as any).hasDmxBoost;
     if ((updates as any).dmxBoostExpiresAt !== undefined) dbUpdates.dmx_boost_expires_at = (updates as any).dmxBoostExpiresAt ? (updates as any).dmxBoostExpiresAt.toISOString() : null;
+    if (updates.profileColorTop !== undefined) dbUpdates.profile_color_top = updates.profileColorTop || null;
+    if (updates.profileColorBottom !== undefined) dbUpdates.profile_color_bottom = updates.profileColorBottom || null;
     if (updates.emailVerificationCode !== undefined) dbUpdates.email_verification_code = updates.emailVerificationCode;
     if (updates.emailVerificationExpires !== undefined) dbUpdates.email_verification_expires = updates.emailVerificationExpires?.toISOString() ?? null;
 

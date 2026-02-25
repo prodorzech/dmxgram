@@ -37,6 +37,8 @@ export interface User {
   badges?: string[];
   hasDmxBoost?: boolean;
   dmxBoostExpiresAt?: Date;
+  profileColorTop?: string;
+  profileColorBottom?: string;
   emailVerified?: boolean;
   emailVerificationCode?: string;
   emailVerificationExpires?: Date;

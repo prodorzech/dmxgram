@@ -229,6 +229,8 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       banner: friend.banner,
       status: friend.status,
       badges: friend.badges || [],
+      profileColorTop: friend.profileColorTop,
+      profileColorBottom: friend.profileColorBottom,
     }));
     res.json(friends);
   } catch (error) {

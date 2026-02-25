@@ -47,12 +47,12 @@ export const FriendsList: React.FC = () => {
     };
 
     // Update friend avatar/bio when they change their profile
-    const handleProfileUpdated = (data: { userId: string; username: string; avatar?: string; bio?: string }) => {
+    const handleProfileUpdated = (data: { userId: string; username: string; avatar?: string; bio?: string; profileColorTop?: string; profileColorBottom?: string }) => {
       setFriends(friends.map(f =>
-        f.id === data.userId ? { ...f, username: data.username, avatar: data.avatar, bio: data.bio } : f
+        f.id === data.userId ? { ...f, username: data.username, avatar: data.avatar, bio: data.bio, profileColorTop: data.profileColorTop, profileColorBottom: data.profileColorBottom } : f
       ));
       if (currentFriend?.id === data.userId) {
-        setCurrentFriend({ ...currentFriend, username: data.username, avatar: data.avatar, bio: data.bio });
+        setCurrentFriend({ ...currentFriend, username: data.username, avatar: data.avatar, bio: data.bio, profileColorTop: data.profileColorTop, profileColorBottom: data.profileColorBottom });
       }
     };
 

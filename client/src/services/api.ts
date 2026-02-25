@@ -128,14 +128,14 @@ export const api = {
     return res.json();
   },
 
-  async updateProfile(username: string | undefined, avatar: string | undefined, banner: string | undefined, bio: string | undefined, token: string) {
+  async updateProfile(username: string | undefined, avatar: string | undefined, banner: string | undefined, bio: string | undefined, token: string, profileColorTop?: string, profileColorBottom?: string) {
     const res = await fetch(`${API_URL}/api/auth/me`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ username, avatar, banner, bio })
+      body: JSON.stringify({ username, avatar, banner, bio, profileColorTop, profileColorBottom })
     });
     if (!res.ok) {
       const error = await res.json();

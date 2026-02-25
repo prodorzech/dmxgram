@@ -17,11 +17,13 @@ interface UserInfoPopoverProps {
   banner?: string;
   status: 'online' | 'offline' | 'away';
   badges?: string[];
+  profileColorTop?: string;
+  profileColorBottom?: string;
   onClose: () => void;
   position: { x: number; y: number };
 }
 
-export function UserInfoPopover({ userId, username, avatar, bio, banner, status, badges, onClose, position }: UserInfoPopoverProps) {
+export function UserInfoPopover({ userId, username, avatar, bio, banner, status, badges, profileColorTop, profileColorBottom, onClose, position }: UserInfoPopoverProps) {
   const { t } = useTranslation();
   const { user, token } = useStore();
   const { toast } = useUI();
@@ -91,6 +93,9 @@ export function UserInfoPopover({ userId, username, avatar, bio, banner, status,
           <div className="popover-banner">
             <img src={getImageUrl(banner)} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
+        )}
+        {!banner && profileColorTop && profileColorBottom && (
+          <div className="popover-banner" style={{ background: `linear-gradient(to bottom, ${profileColorTop}, ${profileColorBottom})`, height: 60 }} />
         )}
 
         <div className="popover-avatar-section">

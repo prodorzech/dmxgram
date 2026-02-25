@@ -49,6 +49,8 @@ const serializeUser = (user: User) => ({
   badges: user.badges || [],
   hasDmxBoost: user.hasDmxBoost ?? false,
   dmxBoostExpiresAt: user.dmxBoostExpiresAt ?? undefined,
+  profileColorTop: user.profileColorTop ?? undefined,
+  profileColorBottom: user.profileColorBottom ?? undefined,
 });
 
 // Register
@@ -296,7 +298,7 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
 // Update user profile
 router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { username, avatar, banner, bio } = req.body;
+    const { username, avatar, banner, bio, profileColorTop, profileColorBottom } = req.body;
     const updates: Partial<User> = {};
 
     if (username) {
@@ -318,6 +320,14 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
       updates.banner = banner;
     }
     if (bio !== undefined) updates.bio = bio;
+    if (profileColorTop !== undefined || profileColorBottom !== undefined) {
+      const currentUser2 = await db.getUserById(req.userId!);
+      if (!currentUser2?.hasDmxBoost) {
+        return res.status(403).json({ error: 'Kolor profilu wymaga DMX Boost' });
+      }
+      if (profileColorTop !== undefined) updates.profileColorTop = profileColorTop;
+      if (profileColorBottom !== undefined) updates.profileColorBottom = profileColorBottom;
+    }
 
     const updatedUser = await db.updateUser(req.userId!, updates);
     if (!updatedUser) {
@@ -333,6 +343,8 @@ router.patch('/me', authMiddleware, async (req: AuthRequest, res) => {
         username: updatedUser.username,
         avatar: updatedUser.avatar,
         bio: updatedUser.bio,
+        profileColorTop: updatedUser.profileColorTop,
+        profileColorBottom: updatedUser.profileColorBottom,
       };
       friends.forEach(f => io.to(`user:${f.id}`).emit('user:profile:updated', payload));
     } catch (_) { /* socket not ready */ }

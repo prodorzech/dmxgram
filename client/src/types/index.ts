@@ -36,6 +36,8 @@ export interface User {
   badges?: string[];
   hasDmxBoost?: boolean;
   dmxBoostExpiresAt?: Date;
+  profileColorTop?: string;
+  profileColorBottom?: string;
 }
 
 export interface Server {
@@ -111,6 +113,8 @@ export interface Friend {
   banner?: string;
   status: 'online' | 'offline' | 'away';
   badges?: string[];
+  profileColorTop?: string;
+  profileColorBottom?: string;
 }
 
 export interface AuthResponse {

@@ -145,6 +145,7 @@ export const DMChat: React.FC = () => {
   const [popoverUser, setPopoverUser] = useState<{
     userId: string; username: string; avatar?: string; bio?: string;
     banner?: string; status: 'online' | 'offline' | 'away'; badges?: string[];
+    profileColorTop?: string; profileColorBottom?: string;
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -631,13 +632,13 @@ export const DMChat: React.FC = () => {
   };
 
   const handleAvatarClick = (event: React.MouseEvent, userId: string, username: string,
-    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away', badges?: string[], banner?: string) => {
+    avatar?: string, bio?: string, status?: 'online' | 'offline' | 'away', badges?: string[], banner?: string, profileColorTop?: string, profileColorBottom?: string) => {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const POPOVER_W = 290;
     const POPOVER_H = bio ? 320 : 240;
     const x = Math.min(rect.left + rect.width + 10, window.innerWidth - POPOVER_W - 10);
     const y = Math.min(rect.top, window.innerHeight - POPOVER_H - 10);
-    setPopoverUser({ userId, username, avatar, bio, banner, status: status || 'offline', badges });
+    setPopoverUser({ userId, username, avatar, bio, banner, status: status || 'offline', badges, profileColorTop, profileColorBottom });
     setPopoverPosition({ x: Math.max(4, x), y: Math.max(4, y) });
     setShowUserPopover(true);
   };
@@ -898,6 +899,8 @@ export const DMChat: React.FC = () => {
               const senderStatus: 'online' | 'offline' | 'away' = isOwn ? (user?.status as any || 'online') : (currentFriend?.status || 'offline');
               const senderBadges = isOwn ? user?.badges : currentFriend?.badges;
               const senderBanner = isOwn ? user?.banner : currentFriend?.banner;
+              const senderProfileColorTop = isOwn ? user?.profileColorTop : currentFriend?.profileColorTop;
+              const senderProfileColorBottom = isOwn ? user?.profileColorBottom : currentFriend?.profileColorBottom;
 
               // ── Call system message ──
               const callData = parseCallMessage(dm.content);
@@ -955,7 +958,7 @@ export const DMChat: React.FC = () => {
                 >
                   {showAvatar ? (
                     <div className="message-avatar clickable"
-                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner)}
+                      onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner, senderProfileColorTop, senderProfileColorBottom)}
                       title={t('chat.clickToSeeUserInfo')}>
                       {senderAvatar ? (
                         <img src={getImageUrl(senderAvatar)} alt={senderUsername} />
@@ -970,7 +973,7 @@ export const DMChat: React.FC = () => {
                     {showAvatar && (
                       <div className="message-header">
                         <span className={`message-username${isOwn ? ' own-name' : ''} clickable`}
-                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner)}
+                          onClick={(e) => handleAvatarClick(e, dm.senderId, senderUsername, senderAvatar, senderBio, senderStatus, senderBadges, senderBanner, senderProfileColorTop, senderProfileColorBottom)}
                           title={t('chat.clickToSeeUserInfo')}>
                           {senderUsername}
                         </span>
@@ -1269,6 +1272,7 @@ export const DMChat: React.FC = () => {
           <UserInfoPopover userId={popoverUser.userId} username={popoverUser.username}
             avatar={popoverUser.avatar} bio={popoverUser.bio} status={popoverUser.status}
             badges={popoverUser.badges} banner={popoverUser.banner}
+            profileColorTop={popoverUser.profileColorTop} profileColorBottom={popoverUser.profileColorBottom}
             position={popoverPosition} onClose={() => setShowUserPopover(false)} />
         )}
 

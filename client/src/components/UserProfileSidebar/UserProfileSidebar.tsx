@@ -59,7 +59,11 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
     <div className="user-profile-sidebar">
       {/* User Header */}
       <div className="profile-sidebar-header">
-        <div className="profile-sidebar-banner" />
+        <div className="profile-sidebar-banner" style={
+          friend.profileColorTop && friend.profileColorBottom
+            ? { background: `linear-gradient(to bottom, ${friend.profileColorTop}, ${friend.profileColorBottom})` }
+            : undefined
+        } />
         <div className="profile-sidebar-avatar-container">
           {friend.avatar ? (
             <img src={getImageUrl(friend.avatar)} alt={friend.username} className="profile-sidebar-avatar" />

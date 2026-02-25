@@ -95,6 +95,8 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '');
   const [bannerFile, setBannerFile]   = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState(user?.banner || '');
+  const [profileColorTop, setProfileColorTop] = useState(user?.profileColorTop || '#1a1a2e');
+  const [profileColorBottom, setProfileColorBottom] = useState(user?.profileColorBottom || '#dc2626');
 
   /* ── Appearance ── */
   const [bgBlur, setBgBlur] = useState<number>(() =>
@@ -409,16 +411,20 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
       const bannerChanged   = bannerUrl !== user.banner;
       const bioChanged      = bio !== user.bio;
       const statusChanged   = customStatus !== user.customStatus;
+      const colorTopChanged = profileColorTop !== (user.profileColorTop || '#1a1a2e');
+      const colorBottomChanged = profileColorBottom !== (user.profileColorBottom || '#dc2626');
 
       let finalUser = user;
 
-      if (usernameChanged || avatarChanged || bannerChanged || bioChanged) {
+      if (usernameChanged || avatarChanged || bannerChanged || bioChanged || colorTopChanged || colorBottomChanged) {
         finalUser = await api.updateProfile(
           usernameChanged ? username : undefined,
           avatarChanged   ? avatarUrl : undefined,
           bannerChanged   ? bannerUrl : undefined,
           bioChanged      ? bio        : undefined,
-          token!
+          token!,
+          colorTopChanged ? profileColorTop : undefined,
+          colorBottomChanged ? profileColorBottom : undefined
         );
       }
 
@@ -642,7 +648,9 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                     style={
                       bannerPreview
                         ? { backgroundImage: `url(${getImageUrl(bannerPreview)})` }
-                        : { background: 'linear-gradient(135deg, var(--accent-primary), #1a1a2e)' }
+                        : user?.hasDmxBoost
+                          ? { background: `linear-gradient(to bottom, ${profileColorTop}, ${profileColorBottom})` }
+                          : { background: 'linear-gradient(135deg, var(--accent-primary), #1a1a2e)' }
                     }
                   />
                   <div className="profile-preview-body">
@@ -723,6 +731,36 @@ export function UserSettingsModal({ onClose }: UserSettingsModalProps) {
                         <Upload size={16} /> {bannerFile ? t('user.changeFile') : t('user.selectFile')}
                       </button>
                       {bannerFile && <span className="settings-file-name">{bannerFile.name}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Profile Gradient (boost-locked) */}
+                <div className={`settings-group${!user?.hasDmxBoost ? ' boost-locked-group' : ''}`}>
+                  <h4 className="settings-group-title">
+                    Kolor profilu
+                    {!user?.hasDmxBoost && <span className="boost-badge"><Lock size={12} /> DMX Boost</span>}
+                  </h4>
+                  <p className="settings-group-desc" style={{ marginBottom: 10 }}>Ustaw gradient kolorów na swoim profilu — jak na Discordzie.</p>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Góra</label>
+                      <input type="color" value={profileColorTop}
+                        onChange={e => setProfileColorTop(e.target.value)}
+                        disabled={loading || !user?.hasDmxBoost}
+                        style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: user?.hasDmxBoost ? 'pointer' : 'not-allowed', background: 'transparent' }} />
+                    </div>
+                    <div style={{
+                      width: 60, height: 60, borderRadius: 10, flexShrink: 0,
+                      background: `linear-gradient(to bottom, ${profileColorTop}, ${profileColorBottom})`,
+                      border: '2px solid var(--border-primary)',
+                    }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Dół</label>
+                      <input type="color" value={profileColorBottom}
+                        onChange={e => setProfileColorBottom(e.target.value)}
+                        disabled={loading || !user?.hasDmxBoost}
+                        style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: user?.hasDmxBoost ? 'pointer' : 'not-allowed', background: 'transparent' }} />
                     </div>
                   </div>
                 </div>

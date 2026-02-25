@@ -66,7 +66,11 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
         </button>
 
         <div className="profile-banner">
-          <div className="profile-banner-gradient" />
+          <div className="profile-banner-gradient" style={
+            friend.profileColorTop && friend.profileColorBottom
+              ? { background: `linear-gradient(to bottom, ${friend.profileColorTop}, ${friend.profileColorBottom})` }
+              : undefined
+          } />
         </div>
 
         <div className="profile-content">
