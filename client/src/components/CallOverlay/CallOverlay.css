@@ -1,0 +1,462 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALL OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Base overlay ── */
+.call-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  animation: callSlideDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.call-overlay.outgoing,
+.call-overlay.incoming {
+  height: 20vh;
+  min-height: 180px;
+}
+
+.call-overlay.connected {
+  height: 100vh;
+  animation: callExpandFull 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes callSlideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes callExpandFull {
+  from { height: 20vh; }
+  to   { height: 100vh; }
+}
+
+/* ── Ringing state ── */
+.call-ringing {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.call-ringing-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(30, 30, 30, 0.97) 0%, rgba(20, 20, 25, 0.98) 100%);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
+.call-ringing-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  height: 100%;
+  padding: 0 32px;
+}
+
+/* ── Avatar wrappers ── */
+.call-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.call-avatar-wrapper.caller .call-avatar,
+.call-avatar-wrapper.callee .call-avatar {
+  width: 64px;
+  height: 64px;
+}
+
+.call-avatar-wrapper.big .call-avatar {
+  width: 120px;
+  height: 120px;
+}
+
+.call-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 3px solid transparent;
+  transition: border-color 0.3s, filter 0.4s, transform 0.3s;
+}
+
+.call-avatar-initial {
+  background: var(--bg-tertiary, #2b2d31);
+  color: var(--text-primary, #f2f3f5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.call-avatar-initial.big {
+  font-size: 42px;
+}
+
+/* Dimmed callee */
+.call-avatar-wrapper.dimmed .call-avatar {
+  filter: brightness(0.45);
+  transform: scale(0.92);
+}
+
+/* When call connects, un-dim */
+.call-overlay.connected .call-avatar-wrapper .call-avatar {
+  filter: brightness(1);
+  transform: scale(1);
+}
+
+/* ── Speaking glow ── */
+.call-avatar-wrapper.speaking .call-avatar {
+  border-color: var(--accent-primary, #dc2626);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-primary) 35%, transparent),
+              0 0 20px color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  animation: speakingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes speakingPulse {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-primary) 35%, transparent),
+                          0 0 20px color-mix(in srgb, var(--accent-primary) 25%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-primary) 50%, transparent),
+                          0 0 30px color-mix(in srgb, var(--accent-primary) 35%, transparent); }
+}
+
+/* ── Pulse rings (ringing animation) ── */
+.call-pulse-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-primary, #dc2626);
+  opacity: 0;
+  animation: pulseRing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.call-pulse-ring.delay {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulseRing {
+  0%   { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ── Ringing info text ── */
+.call-ringing-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.call-ringing-info h3 {
+  color: var(--text-primary, #f2f3f5);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.call-type-label {
+  color: var(--text-muted, #949ba4);
+  font-size: 13px;
+  margin: 0;
+  animation: callDots 1.5s steps(4, end) infinite;
+}
+
+@keyframes callDots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+/* ── Ringing action buttons ── */
+.call-ringing-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.call-action-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.call-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.call-action-btn:active {
+  transform: scale(0.95);
+}
+
+.call-action-btn.accept {
+  background: #22c55e;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
+  animation: acceptBounce 1s ease-in-out infinite;
+}
+
+.call-action-btn.accept:hover {
+  background: #16a34a;
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.5);
+}
+
+@keyframes acceptBounce {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+.call-action-btn.decline {
+  background: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+}
+
+.call-action-btn.decline:hover {
+  background: #dc2626;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONNECTED CALL
+   ═══════════════════════════════════════════════════════════════════════════ */
+.call-connected {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #111214;
+}
+
+/* ── Video area ── */
+.call-video-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #1a1a2e 0%, #111214 70%);
+}
+
+.call-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.call-avatars-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+
+/* ── Local video PiP ── */
+.call-local-pip {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 200px;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  animation: pipSlideIn 0.3s ease;
+  cursor: move;
+  z-index: 10;
+}
+
+.call-local-pip.speaking {
+  border-color: var(--accent-primary, #dc2626);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 30%, transparent),
+              0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes pipSlideIn {
+  from { opacity: 0; transform: scale(0.8) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.call-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror */
+}
+
+/* ── Call info bar ── */
+.call-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.call-peer-name {
+  color: var(--text-primary, #f2f3f5);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.call-timer {
+  color: var(--text-muted, #949ba4);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Controls bar ── */
+.call-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(30, 31, 34, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.call-ctrl-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary, #f2f3f5);
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.call-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.08);
+}
+
+.call-ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.call-ctrl-btn.active {
+  background: var(--accent-primary, #dc2626);
+  color: #fff;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
+
+.call-ctrl-btn.active:hover {
+  background: var(--accent-hover, #b91c1c);
+}
+
+.call-ctrl-btn.hangup {
+  background: #ef4444;
+  color: #fff;
+}
+
+.call-ctrl-btn.hangup:hover {
+  background: #dc2626;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="light"] .call-ringing-bg {
+  background: linear-gradient(135deg, rgba(240, 240, 245, 0.97) 0%, rgba(230, 230, 235, 0.98) 100%);
+}
+[data-theme="light"] .call-ringing-info h3 {
+  color: #060607;
+}
+[data-theme="light"] .call-avatar-initial {
+  background: #e3e5e8;
+  color: #060607;
+}
+[data-theme="light"] .call-connected {
+  background: #e3e5e8;
+}
+[data-theme="light"] .call-video-area {
+  background: radial-gradient(ellipse at center, #f2f3f5 0%, #e3e5e8 70%);
+}
+[data-theme="light"] .call-info-bar {
+  background: rgba(255, 255, 255, 0.7);
+}
+[data-theme="light"] .call-peer-name {
+  color: #060607;
+}
+[data-theme="light"] .call-controls {
+  background: rgba(255, 255, 255, 0.9);
+}
+[data-theme="light"] .call-ctrl-btn {
+  background: rgba(0, 0, 0, 0.06);
+  color: #060607;
+}
+[data-theme="light"] .call-ctrl-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .call-overlay.outgoing,
+  .call-overlay.incoming {
+    min-height: 140px;
+  }
+
+  .call-ringing-content {
+    gap: 16px;
+    padding: 0 16px;
+    flex-wrap: wrap;
+  }
+
+  .call-avatar-wrapper.caller .call-avatar,
+  .call-avatar-wrapper.callee .call-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .call-ringing-info h3 {
+    font-size: 14px;
+  }
+
+  .call-local-pip {
+    width: 120px;
+    height: 90px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  .call-controls {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .call-ctrl-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .call-action-btn {
+    width: 42px;
+    height: 42px;
+  }
+}

@@ -204,6 +204,47 @@
   color: var(--text-secondary);
 }
 
+/* ── Call buttons in header ── */
+.dm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.dm-call-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary, #949ba4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+.dm-call-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #f2f3f5);
+  transform: scale(1.08);
+}
+.dm-call-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.dm-call-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+[data-theme="light"] .dm-call-btn {
+  background: rgba(0, 0, 0, 0.04);
+  color: #5c5e66;
+}
+[data-theme="light"] .dm-call-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  color: #060607;
+}
+
 .dm-messages {
   flex: 1;
   overflow-y: auto;

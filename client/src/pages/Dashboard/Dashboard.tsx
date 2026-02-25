@@ -7,6 +7,7 @@ import { UserPanel } from '../../components/UserPanel/UserPanel';
 import { UserSettingsModal } from '../../components/UserSettingsModal/UserSettingsModal';
 import { AdminPanel } from '../../components/AdminPanel/AdminPanel';
 import { ChangePasswordModal } from '../../components/ChangePasswordModal/ChangePasswordModal';
+import { CallOverlay } from '../../components/CallOverlay/CallOverlay';
 import './Dashboard.css';
 
 export function Dashboard() {
@@ -151,6 +152,7 @@ export function Dashboard() {
           />
         )}
       </div>
+      <CallOverlay />
     </div>
   );
 }

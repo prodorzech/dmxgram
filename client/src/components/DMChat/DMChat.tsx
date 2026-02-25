@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic, Play, Pause } from 'lucide-react';
+import { Send, Smile, ChevronLeft, Pencil, Trash2, Flag, X, Check, Paperclip, CornerUpLeft, Eraser, ShieldBan, ShieldOff, Copy, MoreVertical, Share2, Mic, Play, Pause, Phone, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { useUI } from '../../context/UIContext';
@@ -136,7 +136,7 @@ export const DMChat: React.FC = () => {
   const { toast, confirm } = useUI();
   const { currentFriend, setCurrentFriend, directMessages, addDirectMessage, setDirectMessages,
     updateDirectMessage, updateDirectMessageReactions, removeDirectMessage, user, token, addTypingFriend, removeTypingFriend, typingFriends,
-    blockedUserIds, removeBlockedUserId, friends } = useStore();
+    blockedUserIds, removeBlockedUserId, friends, startOutgoingCall, callState } = useStore();
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -838,6 +838,34 @@ export const DMChat: React.FC = () => {
               </p>
               {currentFriend.bio && <p className="friend-bio">{currentFriend.bio}</p>}
             </div>
+          </div>
+          <div className="dm-header-actions">
+            <button
+              className="dm-call-btn"
+              onClick={() => startOutgoingCall({
+                peerId: currentFriend.id,
+                peerUsername: currentFriend.username,
+                peerAvatar: currentFriend.avatar,
+                callType: 'voice'
+              })}
+              disabled={callState !== 'idle'}
+              title={t('call.voiceCall')}
+            >
+              <Phone size={18} />
+            </button>
+            <button
+              className="dm-call-btn"
+              onClick={() => startOutgoingCall({
+                peerId: currentFriend.id,
+                peerUsername: currentFriend.username,
+                peerAvatar: currentFriend.avatar,
+                callType: 'video'
+              })}
+              disabled={callState !== 'idle'}
+              title={t('call.videoCall')}
+            >
+              <Video size={18} />
+            </button>
           </div>
           <button
             className="clear-chat-btn"

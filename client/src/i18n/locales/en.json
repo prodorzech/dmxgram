@@ -441,5 +441,21 @@
     "customBgRequiresBoost": "Custom background requires DMX Boost",
     "gifAvatarHint": "Animated avatars (GIF) available with DMX Boost",
     "features": "DMX Boost Features"
+  },
+  "call": {
+    "voiceCall": "Voice Call",
+    "videoCall": "Video Call",
+    "calling": "Calling {{name}}...",
+    "incomingFrom": "{{name}} is calling...",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "hangUp": "Hang Up",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "cameraOn": "Turn On Camera",
+    "cameraOff": "Turn Off Camera",
+    "screenShare": "Share Screen",
+    "stopScreenShare": "Stop Sharing"
   }
 }

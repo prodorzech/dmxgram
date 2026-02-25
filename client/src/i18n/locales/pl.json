@@ -441,5 +441,21 @@
     "noBoostCodes": "Brak wygenerowanych kodów",
     "allCodes": "Wszystkie kody",
     "refresh": "Odśwież"
+  },
+  "call": {
+    "voiceCall": "Połączenie głosowe",
+    "videoCall": "Połączenie wideo",
+    "calling": "Dzwonisz do {{name}}...",
+    "incomingFrom": "{{name}} dzwoni...",
+    "accept": "Odbierz",
+    "decline": "Odrzuć",
+    "cancel": "Anuluj",
+    "hangUp": "Rozłącz się",
+    "mute": "Wycisz mikrofon",
+    "unmute": "Włącz mikrofon",
+    "cameraOn": "Włącz kamerę",
+    "cameraOff": "Wyłącz kamerę",
+    "screenShare": "Udostępnij ekran",
+    "stopScreenShare": "Zatrzymaj udostępnianie"
   }
 }

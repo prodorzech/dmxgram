@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import { User, DirectMessage, Friend, FriendRequest } from '../types';
 
+/* ── Call types ────────────────────────────────────────────────────────── */
+export type CallState = 'idle' | 'outgoing' | 'incoming' | 'connected';
+export type CallType = 'voice' | 'video';
+
+export interface CallInfo {
+  peerId: string;           // remote user id
+  peerUsername: string;
+  peerAvatar?: string;
+  callType: CallType;
+}
+
 interface AppState {
   // Auth
   user: User | null;
@@ -45,6 +56,16 @@ interface AppState {
   typingFriends: Set<string>; // Set of friendIds who are typing
   addTypingFriend: (friendId: string) => void;
   removeTypingFriend: (friendId: string) => void;
+
+  // Calls
+  callState: CallState;
+  callInfo: CallInfo | null;
+  setCallState: (state: CallState) => void;
+  setCallInfo: (info: CallInfo | null) => void;
+  startOutgoingCall: (info: CallInfo) => void;
+  receiveIncomingCall: (info: CallInfo) => void;
+  callConnected: () => void;
+  endCall: () => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -146,5 +167,15 @@ export const useStore = create<AppState>((set) => ({
       const newSet = new Set(state.typingFriends);
       newSet.delete(friendId);
       return { typingFriends: newSet };
-    })
+    }),
+
+  // Calls
+  callState: 'idle',
+  callInfo: null,
+  setCallState: (callState) => set({ callState }),
+  setCallInfo: (callInfo) => set({ callInfo }),
+  startOutgoingCall: (info) => set({ callState: 'outgoing', callInfo: info }),
+  receiveIncomingCall: (info) => set({ callState: 'incoming', callInfo: info }),
+  callConnected: () => set({ callState: 'connected' }),
+  endCall: () => set({ callState: 'idle', callInfo: null }),
 }));

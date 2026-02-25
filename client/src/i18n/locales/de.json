@@ -441,5 +441,21 @@
     "noBoostCodes": "Noch keine Boost-Codes generiert",
     "allCodes": "Alle Codes",
     "refresh": "Aktualisieren"
+  },
+  "call": {
+    "voiceCall": "Sprachanruf",
+    "videoCall": "Videoanruf",
+    "calling": "{{name}} wird angerufen...",
+    "incomingFrom": "{{name}} ruft an...",
+    "accept": "Annehmen",
+    "decline": "Ablehnen",
+    "cancel": "Abbrechen",
+    "hangUp": "Auflegen",
+    "mute": "Stummschalten",
+    "unmute": "Stummschaltung aufheben",
+    "cameraOn": "Kamera einschalten",
+    "cameraOff": "Kamera ausschalten",
+    "screenShare": "Bildschirm teilen",
+    "stopScreenShare": "Teilen beenden"
   }
 }

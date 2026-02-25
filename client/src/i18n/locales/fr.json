@@ -438,6 +438,22 @@
     "gifAvatarHint": "Avatars animés (GIF) disponibles avec DMX Boost",
     "features": "Fonctionnalités DMX Boost"
   },
+  "call": {
+    "voiceCall": "Appel vocal",
+    "videoCall": "Appel vidéo",
+    "calling": "Appel de {{name}}...",
+    "incomingFrom": "{{name}} vous appelle...",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "cancel": "Annuler",
+    "hangUp": "Raccrocher",
+    "mute": "Couper le micro",
+    "unmute": "Activer le micro",
+    "cameraOn": "Activer la caméra",
+    "cameraOff": "Désactiver la caméra",
+    "screenShare": "Partager l'écran",
+    "stopScreenShare": "Arrêter le partage"
+  },
   "dialog": {
     "confirm": "Confirmer",
     "cancel": "Annuler"

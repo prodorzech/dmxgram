@@ -326,6 +326,72 @@ export const initializeSocket = (httpServer: HTTPServer) => {
       });
     });
 
+    // ══════════════════════════════════════════════════════════════════════
+    //  VOICE / VIDEO CALLS  (WebRTC signaling relay)
+    // ══════════════════════════════════════════════════════════════════════
+
+    // Initiate a call → forward offer to the target user
+    socket.on('call:offer', (data: { targetUserId: string; offer: any; callType: 'voice' | 'video'; callerInfo: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:offer', {
+        callerId: userId,
+        callerInfo: data.callerInfo,
+        offer: data.offer,
+        callType: data.callType
+      });
+    });
+
+    // Answer a call → forward answer back to the caller
+    socket.on('call:answer', (data: { targetUserId: string; answer: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:answer', {
+        answererId: userId,
+        answer: data.answer
+      });
+    });
+
+    // ICE candidate exchange
+    socket.on('call:ice-candidate', (data: { targetUserId: string; candidate: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:ice-candidate', {
+        fromUserId: userId,
+        candidate: data.candidate
+      });
+    });
+
+    // Hang up — either side can end the call
+    socket.on('call:hangup', (data: { targetUserId: string }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:hangup', {
+        fromUserId: userId
+      });
+    });
+
+    // Reject incoming call
+    socket.on('call:reject', (data: { targetUserId: string }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:reject', {
+        fromUserId: userId
+      });
+    });
+
+    // Busy signal — user is already in a call
+    socket.on('call:busy', (data: { targetUserId: string }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:busy', {
+        fromUserId: userId
+      });
+    });
+
+    // Renegotiate — when adding/removing video or screen share mid-call
+    socket.on('call:renegotiate', (data: { targetUserId: string; offer: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:renegotiate', {
+        fromUserId: userId,
+        offer: data.offer
+      });
+    });
+
+    socket.on('call:renegotiate-answer', (data: { targetUserId: string; answer: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit('call:renegotiate-answer', {
+        fromUserId: userId,
+        answer: data.answer
+      });
+    });
+
     // Disconnect
     socket.on('disconnect', async () => {
       console.log(`User disconnected: ${userId}`);
