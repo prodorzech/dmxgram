@@ -208,7 +208,7 @@ function createMain() {
   // and it was blocking Supabase avatars + potentially JS/CSS resources.
   // Helmet on Express also has CSP disabled.
 
-  mainWindow.setContentProtection(true);
+  // mainWindow.setContentProtection(true); // temporarily disabled
   mainWindow.maximize();
 
   // Load the React app from Express. Simple and direct.
