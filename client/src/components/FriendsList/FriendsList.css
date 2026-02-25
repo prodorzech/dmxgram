@@ -97,7 +97,7 @@
 }
 
 .friend-item.active {
-  background: rgba(40, 26, 26, 0.6);
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
   transform: none;
   box-shadow: 0 0 0 1.5px var(--accent-primary), 0 0 16px 3px var(--accent-shadow);
 }
