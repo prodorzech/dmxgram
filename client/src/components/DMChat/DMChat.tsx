@@ -643,11 +643,6 @@ export const DMChat: React.FC = () => {
     setShowUserPopover(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, dm: DirectMessage, isOwn: boolean) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, message: dm, isOwn });
-  };
-
   const handleEdit = () => {
     if (!contextMenu) return;
     setEditingId(contextMenu.message.id);
@@ -963,7 +958,6 @@ export const DMChat: React.FC = () => {
                 <div
                   key={dm.id}
                   className={`message${isOwn ? ' own' : ''}${reportedIds.has(dm.id) ? ' reported' : ''}`}
-                  onContextMenu={(e) => handleContextMenu(e, dm, isOwn)}
                 >
                   {showAvatar ? (
                     <div className="message-avatar clickable"
@@ -1098,6 +1092,18 @@ export const DMChat: React.FC = () => {
                         title={t('chat.moreReactions')}
                       >
                         +
+                      </button>
+                      <span className="msg-actions-sep" />
+                      <button
+                        className="msg-more-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setContextMenu({ x: rect.right - 160, y: rect.bottom + 4, message: dm, isOwn });
+                        }}
+                        title={t('chat.moreActions')}
+                      >
+                        <MoreVertical size={16} />
                       </button>
                     </div>
                   )}
