@@ -82,7 +82,16 @@ export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ friend }
       {/* User Info */}
       <div className="profile-sidebar-content">
         <div className="profile-sidebar-username-row">
-          <span className="profile-sidebar-username">{friend.username}</span>
+          <span className="profile-sidebar-username" style={
+            friend.profileColorTop && friend.profileColorBottom
+              ? {
+                  background: `linear-gradient(90deg, ${friend.profileColorTop}, ${friend.profileColorBottom})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }
+              : undefined
+          }>{friend.username}</span>
           {friend.badges && friend.badges.length > 0 && (
             <UserBadges badges={friend.badges} size="md" />
           )}

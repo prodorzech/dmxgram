@@ -110,7 +110,16 @@ export function UserInfoPopover({ userId, username, avatar, bio, banner, status,
 
         <div className="popover-info">
           <div className="popover-username-row">
-            <h3 className="popover-username">{username}</h3>
+            <h3 className="popover-username" style={
+              profileColorTop && profileColorBottom
+                ? {
+                    background: `linear-gradient(90deg, ${profileColorTop}, ${profileColorBottom})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }
+                : undefined
+            }>{username}</h3>
             {badges && badges.length > 0 && <UserBadges badges={badges} size="sm" />}
           </div>
 

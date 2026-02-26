@@ -91,7 +91,16 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
           <div className="profile-info-section">
             <div className="profile-username-section">
               <div className="profile-username-row">
-                <h2 className="profile-username">{friend.username}</h2>
+                <h2 className="profile-username" style={
+                  friend.profileColorTop && friend.profileColorBottom
+                    ? {
+                        background: `linear-gradient(90deg, ${friend.profileColorTop}, ${friend.profileColorBottom})`,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }
+                    : undefined
+                }>{friend.username}</h2>
                 {friend.badges && friend.badges.length > 0 && (
                   <UserBadges badges={friend.badges} size="md" />
                 )}

@@ -838,7 +838,16 @@ export const DMChat: React.FC = () => {
               )}
             </div>
             <div>
-              <h3>{currentFriend.username}</h3>
+              <h3 style={
+                currentFriend.profileColorTop && currentFriend.profileColorBottom
+                  ? {
+                      background: `linear-gradient(90deg, ${currentFriend.profileColorTop}, ${currentFriend.profileColorBottom})`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }
+                  : undefined
+              }>{currentFriend.username}</h3>
               <p className="friend-header-status">
                 <span className="friend-header-status-dot" style={{ backgroundColor: getStatusColor(currentFriend.status) }} />
                 {currentFriend.status === 'online' ? t('status.online') : currentFriend.status === 'away' ? t('status.away') : t('status.offline')}
