@@ -10,13 +10,25 @@ let io: SocketIOServer;
 
 // ── Supabase Realtime Broadcast (single shared channel for call signaling) ──
 let globalCallChannel: any = null;
+let channelSubscribed = false;
+let channelReconnecting = false;
 // Map userId → handler that forwards a broadcast payload to the user's local socket
 const callSignalHandlers = new Map<string, (payload: any) => void>();
 
-function ensureCallChannel() {
-  if (globalCallChannel) return globalCallChannel;
-
+function createCallChannel() {
   const supabase = getSupabase();
+
+  // If there's an existing dead channel, unsubscribe it first
+  if (globalCallChannel) {
+    try {
+      supabase.removeChannel(globalCallChannel);
+    } catch (e) {
+      console.warn('[CALL-BROADCAST] Error removing old channel:', e);
+    }
+    globalCallChannel = null;
+    channelSubscribed = false;
+  }
+
   globalCallChannel = supabase.channel('dmxgram-call-signals', {
     config: { broadcast: { self: false } }
   });
@@ -34,10 +46,56 @@ function ensureCallChannel() {
     })
     .subscribe((status: string) => {
       console.log(`[CALL-BROADCAST] Global channel status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        channelSubscribed = true;
+        channelReconnecting = false;
+        console.log('[CALL-BROADCAST] Channel subscribed successfully');
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        channelSubscribed = false;
+        console.warn(`[CALL-BROADCAST] Channel ${status} — scheduling reconnect`);
+        scheduleReconnect();
+      } else if (status === 'TIMED_OUT') {
+        channelSubscribed = false;
+        console.warn('[CALL-BROADCAST] Channel timed out — scheduling reconnect');
+        scheduleReconnect();
+      }
     });
 
   return globalCallChannel;
 }
+
+function scheduleReconnect() {
+  if (channelReconnecting) return;
+  channelReconnecting = true;
+  console.log('[CALL-BROADCAST] Will reconnect in 3s...');
+  setTimeout(() => {
+    console.log('[CALL-BROADCAST] Reconnecting call channel...');
+    channelReconnecting = false;
+    createCallChannel();
+  }, 3000);
+}
+
+function ensureCallChannel() {
+  if (globalCallChannel && channelSubscribed) return globalCallChannel;
+  if (globalCallChannel && !channelSubscribed && !channelReconnecting) {
+    // Channel exists but not subscribed — recreate
+    console.warn('[CALL-BROADCAST] Channel not subscribed, recreating...');
+    return createCallChannel();
+  }
+  if (!globalCallChannel) {
+    return createCallChannel();
+  }
+  return globalCallChannel;
+}
+
+// Periodic health check: every 30s verify the channel is still alive
+setInterval(() => {
+  if (!globalCallChannel) return; // no channel yet, nothing to check
+  if (!channelSubscribed && !channelReconnecting) {
+    console.warn('[CALL-BROADCAST] Health check: channel not subscribed, triggering reconnect');
+    createCallChannel();
+  }
+}, 30_000);
 
 export const getIO = (): SocketIOServer => {
   if (!io) throw new Error('Socket.IO not initialized');
@@ -374,13 +432,39 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     // Helper: send a call signal to another user via the shared broadcast channel
-    const sendCallSignal = (targetUserId: string, signalType: string, data: any) => {
+    const sendCallSignal = async (targetUserId: string, signalType: string, data: any) => {
       console.log(`[CALL] Sending ${signalType} from ${userId} to ${targetUserId} via Supabase Broadcast`);
-      channel.send({
-        type: 'broadcast',
-        event: 'call-signal',
-        payload: { targetUserId, signalType, ...data }
-      });
+      try {
+        const ch = ensureCallChannel();
+        const result = await ch.send({
+          type: 'broadcast',
+          event: 'call-signal',
+          payload: { targetUserId, signalType, ...data }
+        });
+        if (result !== 'ok') {
+          console.error(`[CALL] Broadcast send returned: ${result} — recreating channel`);
+          channelSubscribed = false;
+          const newCh = createCallChannel();
+          // Retry once after recreating
+          setTimeout(async () => {
+            try {
+              await newCh.send({
+                type: 'broadcast',
+                event: 'call-signal',
+                payload: { targetUserId, signalType, ...data }
+              });
+              console.log(`[CALL] Retry send of ${signalType} succeeded`);
+            } catch (retryErr) {
+              console.error(`[CALL] Retry send of ${signalType} also failed:`, retryErr);
+            }
+          }, 2000);
+        }
+      } catch (err) {
+        console.error(`[CALL] Failed to send ${signalType}:`, err);
+        // Force reconnect
+        channelSubscribed = false;
+        createCallChannel();
+      }
     };
 
     // Initiate a call → forward offer to the target user
