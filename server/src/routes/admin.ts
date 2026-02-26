@@ -86,7 +86,7 @@ router.patch('/users/:userId/badges', authMiddleware, adminMiddleware, async (re
     const VALID_BADGES = [
       'ceo', 'staff', 'moderator', 'media',
       'bug-hunter-1', 'bug-hunter-2', 'bug-hunter-3',
-      'partnership', 'famous', 'sponsor', 'beta-tester'
+      'partnership', 'famous', 'sponsor', 'beta-tester', 'management'
     ];
     const filtered = (badges || []).filter(b => VALID_BADGES.includes(b));
 
