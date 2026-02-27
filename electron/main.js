@@ -209,7 +209,7 @@ function createMain() {
   // Helmet on Express also has CSP disabled.
 
   // mainWindow.setContentProtection(true); // temporarily disabled
-  mainWindow.setContentProtection(true);
+  // mainWindow.setContentProtection(true);
   mainWindow.maximize();
 
   // Load the React app from Express. Simple and direct.
