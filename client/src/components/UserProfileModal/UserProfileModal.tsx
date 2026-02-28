@@ -52,15 +52,17 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
         await api.unlikeUser(friend.id, token);
         setIsLikedByMe(false);
         setLikesCount(Math.max(0, likesCount - 1));
-        toast(t('user.likes'), 'info');
+        toast('Usunięto z ulubionych', 'info');
       } else {
         await api.likeUser(friend.id, token);
         setIsLikedByMe(true);
         setLikesCount(likesCount + 1);
         toast(t('user.likeUser'), 'success');
       }
-    } catch (error) {
-      toast('Failed to update like', 'error');
+    } catch (error: any) {
+      const errorMsg = error?.message || 'Failed to update like';
+      toast(`Error: ${errorMsg}`, 'error');
+      console.error('Like error:', error);
     } finally {
       setLiking(false);
     }
@@ -176,7 +178,7 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
               )}
               {user && user.id !== friend.id && (
                 <button 
-                  className={`action-button ${isLikedByMe ? 'liked' : ''}`}
+                  className={`action-button like-button ${isLikedByMe ? 'liked' : ''}`}
                   onClick={handleLikeUser}
                   disabled={liking}
                   title={isLikedByMe ? 'Unlike' : 'Like'}
