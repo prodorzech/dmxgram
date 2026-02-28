@@ -162,6 +162,11 @@ export class Database {
   // In-memory reaction fallback – used when message_reactions table doesn’t exist yet
   private reactionMemory: Map<string, { emoji: string; userIds: string[] }[]> = new Map();
 
+  // Supabase client accessor
+  get supabase() {
+    return getSupabase();
+  }
+
   toggleReactionInMemory(messageId: string, userId: string, emoji: string): { emoji: string; userIds: string[] }[] {
     const current = this.reactionMemory.get(messageId) || [];
     const existingIdx = current.findIndex(r => r.emoji === emoji);

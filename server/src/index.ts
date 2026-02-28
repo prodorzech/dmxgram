@@ -12,6 +12,7 @@ import uploadRoutes from './routes/upload';
 import adminRoutes from './routes/admin';
 import reportsRoutes from './routes/reports';
 import paymentsRoutes from './routes/payments';
+import usersRoutes from './routes/users';
 import { initializeSocket } from './socket';
 import { db } from './database';
 
@@ -104,6 +105,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/users', usersRoutes);
 
 // Health check (no rate limit needed)
 app.get('/api/health', (_req, res) => {
