@@ -1,8 +1,8 @@
 -- Create user_likes table for tracking user likes/follows
 CREATE TABLE IF NOT EXISTS public.user_likes (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  liker_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  liked_user_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  liker_id BIGINT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  liked_user_id BIGINT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Prevent duplicate likes: one user can only like another user once
