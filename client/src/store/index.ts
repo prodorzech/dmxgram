@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, DirectMessage, Friend, FriendRequest } from '../types';
+import { User, DirectMessage, Friend, FriendRequest, Server, Channel, Message } from '../types';
 
 /* ── Call types ────────────────────────────────────────────────────────── */
 export type CallState = 'idle' | 'outgoing' | 'incoming' | 'connected';
@@ -45,6 +45,21 @@ interface AppState {
   updateDirectMessage: (id: string, content: string) => void;
   updateDirectMessageReactions: (id: string, reactions: DirectMessage['reactions']) => void;
   removeDirectMessage: (id: string) => void;
+
+  // Servers
+  servers: Server[];
+  currentServer: Server | null;
+  currentChannel: Channel | null;
+  serverMessages: Message[];
+  setServers: (servers: Server[]) => void;
+  setCurrentServer: (server: Server | null) => void;
+  setCurrentChannel: (channel: Channel | null) => void;
+  setServerMessages: (messages: Message[]) => void;
+  addServerMessage: (message: Message) => void;
+  updateServerMessage: (id: string, content: string) => void;
+  removeServerMessage: (id: string) => void;
+  addServer: (server: Server) => void;
+  removeServer: (serverId: string) => void;
 
   // UI State
   theme: 'dark' | 'light';
@@ -94,7 +109,11 @@ export const useStore = create<AppState>((set) => ({
       friends: [],
       currentFriend: null,
       friendRequests: [],
-      directMessages: []
+      directMessages: [],
+      servers: [],
+      currentServer: null,
+      currentChannel: null,
+      serverMessages: []
     });
   },
   updateUserStatus: (status) =>
@@ -144,6 +163,33 @@ export const useStore = create<AppState>((set) => ({
   removeDirectMessage: (id) =>
     set((state) => ({
       directMessages: state.directMessages.filter((dm) => dm.id !== id)
+    })),
+
+  // Servers
+  servers: [],
+  currentServer: null,
+  currentChannel: null,
+  serverMessages: [],
+  setServers: (servers) => set({ servers }),
+  setCurrentServer: (server) => set({ currentServer: server, currentChannel: null, serverMessages: [] }),
+  setCurrentChannel: (channel) => set({ currentChannel: channel, serverMessages: [] }),
+  setServerMessages: (messages) => set({ serverMessages: messages }),
+  addServerMessage: (message) => set((state) => ({ serverMessages: [...state.serverMessages, message] })),
+  updateServerMessage: (id, content) =>
+    set((state) => ({
+      serverMessages: state.serverMessages.map((msg) =>
+        msg.id === id ? { ...msg, content, edited: true, editedAt: new Date() } : msg
+      )
+    })),
+  removeServerMessage: (id) =>
+    set((state) => ({
+      serverMessages: state.serverMessages.filter((msg) => msg.id !== id)
+    })),
+  addServer: (server) => set((state) => ({ servers: [...state.servers, server] })),
+  removeServer: (serverId) =>
+    set((state) => ({
+      servers: state.servers.filter((s) => s.id !== serverId),
+      currentServer: state.currentServer?.id === serverId ? null : state.currentServer
     })),
 
   // UI State

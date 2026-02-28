@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store';
 import { FriendsList } from '../../components/FriendsList/FriendsList';
+import { ServerList } from '../../components/ServerList/ServerList';
+import { ServerChannels } from '../../components/ServerChannels/ServerChannels';
+import { ServerChat } from '../../components/ServerChat/ServerChat';
 import { DMChat } from '../../components/DMChat/DMChat';
 import { UserPanel } from '../../components/UserPanel/UserPanel';
 import { UserSettingsModal } from '../../components/UserSettingsModal/UserSettingsModal';
@@ -15,7 +18,7 @@ export function Dashboard() {
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const { user, setUser, currentFriend } = useStore();
+  const { user, setUser, currentFriend, currentServer, currentChannel } = useStore();
 
   // Apply background blur CSS variable from localStorage on mount + live updates
   useEffect(() => {
@@ -125,19 +128,30 @@ export function Dashboard() {
           />
         )
       )}
-      <div className="dashboard-overlay" data-chat-open={!!currentFriend ? 'true' : 'false'}>
+      <div className="dashboard-overlay" data-chat-open={!!currentFriend || !!currentChannel ? 'true' : 'false'}>
         {showAdminPanel ? (
           <AdminPanel />
         ) : (
           <>
             <div className="dashboard-sidebar">
-              <FriendsList />
+              <div className="sidebar-top">
+                <ServerList />
+                <div className="sidebar-divider" />
+                <FriendsList />
+              </div>
               <UserPanel 
                 onSettingsClick={() => setShowUserSettings(true)}
                 onAdminClick={() => setShowAdminPanel(true)}
               />
             </div>
-            <DMChat />
+            {currentServer && (
+              <ServerChannels />
+            )}
+            {currentServer && currentChannel ? (
+              <ServerChat />
+            ) : (
+              <DMChat />
+            )}
           </>
         )}
         {showUserSettings && (

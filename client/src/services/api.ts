@@ -234,6 +234,15 @@ export const api = {
     return res.json();
   },
 
+  async leaveServer(serverId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/servers/${serverId}/leave`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to leave server');
+    return res.json();
+  },
+
   async createChannel(serverId: string, name: string, description: string | undefined, token: string) {
     const res = await fetch(`${API_URL}/api/servers/${serverId}/channels`, {
       method: 'POST',
@@ -244,6 +253,15 @@ export const api = {
       body: JSON.stringify({ name, description })
     });
     if (!res.ok) throw new Error('Failed to create channel');
+    return res.json();
+  },
+
+  async deleteChannel(serverId: string, channelId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/servers/${serverId}/channels/${channelId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to delete channel');
     return res.json();
   },
 
