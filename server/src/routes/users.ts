@@ -25,12 +25,19 @@ router.post('/:userId/like', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Check if already liked
-    const { data: existingLike } = await db.supabase
+    const { data: existingLike, error: checkError } = await db.supabase
       .from('user_likes')
       .select('id')
       .eq('liker_id', currentUserId)
       .eq('liked_user_id', userId)
       .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 = no rows found (not an error)
+      console.error('❌ Check existing like error:', checkError);
+      const errorMsg = (checkError as any)?.message || (checkError as any)?.details || JSON.stringify(checkError);
+      return res.status(500).json({ error: `Failed to check like: ${errorMsg}` });
+    }
 
     if (existingLike) {
       return res.status(400).json({ error: 'Already liked this user' });
@@ -44,7 +51,8 @@ router.post('/:userId/like', authMiddleware, async (req: AuthRequest, res) => {
 
     if (error) {
       console.error('❌ Like error:', error);
-      return res.status(500).json({ error: 'Failed to like user' });
+      const errorMsg = (error as any)?.message || (error as any)?.details || JSON.stringify(error);
+      return res.status(500).json({ error: `Failed to like user: ${errorMsg}` });
     }
 
     res.json({ success: true, id: data?.[0]?.id });
@@ -72,7 +80,8 @@ router.delete('/:userId/like', authMiddleware, async (req: AuthRequest, res) => 
 
     if (error) {
       console.error('❌ Unlike error:', error);
-      return res.status(500).json({ error: 'Failed to unlike user' });
+      const errorMsg = (error as any)?.message || (error as any)?.details || JSON.stringify(error);
+      return res.status(500).json({ error: `Failed to unlike user: ${errorMsg}` });
     }
 
     res.json({ success: true });
@@ -94,7 +103,8 @@ router.get('/:userId/likes-count', async (req: Request, res: Response) => {
 
     if (error) {
       console.error('❌ Likes count error:', error);
-      return res.status(500).json({ error: 'Failed to fetch likes count' });
+      const errorMsg = (error as any)?.message || (error as any)?.details || JSON.stringify(error);
+      return res.status(500).json({ error: `Failed to fetch likes count: ${errorMsg}` });
     }
 
     const count = likes?.length || 0;
@@ -125,7 +135,8 @@ router.get('/:userId/liked-by-me', authMiddleware, async (req: AuthRequest, res)
     if (error && error.code !== 'PGRST116') {
       // PGRST116 = no rows returned (not an error)
       console.error('❌ Check like error:', error);
-      return res.status(500).json({ error: 'Failed to check like' });
+      const errorMsg = (error as any)?.message || (error as any)?.details || JSON.stringify(error);
+      return res.status(500).json({ error: `Failed to check like: ${errorMsg}` });
     }
 
     res.json({ liked: !!like });

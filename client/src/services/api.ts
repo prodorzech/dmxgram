@@ -564,7 +564,10 @@ export const api = {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to like user');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to like user');
+    }
     return res.json();
   },
 
@@ -573,12 +576,18 @@ export const api = {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to unlike user');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to unlike user');
+    }
   },
 
   async getUserLikesCount(userId: string) {
     const res = await fetch(`${API_URL}/api/users/${userId}/likes-count`);
-    if (!res.ok) throw new Error('Failed to fetch likes count');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to fetch likes count');
+    }
     return res.json();
   },
 
@@ -586,7 +595,10 @@ export const api = {
     const res = await fetch(`${API_URL}/api/users/${userId}/liked-by-me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to check if liked');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to check if liked');
+    }
     return res.json();
   }
 };
