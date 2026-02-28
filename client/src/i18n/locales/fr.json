@@ -187,6 +187,8 @@
     "customBgHint": "Téléchargez une image pour l'utiliser comme arrière-plan (enregistrée localement)",
     "clearCustomBg": "Supprimer l'image",
     "reportUser": "Signaler l'utilisateur",
+    "likeUser": "J'aime cette personne",
+    "likes": "J'aimes",
     "spamWarning": "⏳ Vous envoyez trop vite ! Attendez {{seconds}}s",
     "saveSuccess": "Profil enregistré avec succès"
   },

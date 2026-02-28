@@ -187,6 +187,8 @@
     "customBgHint": "Bild als App-Hintergrund hochladen (lokal gespeichert)",
     "clearCustomBg": "Bild entfernen",
     "reportUser": "User melden",
+    "likeUser": "Person gefällt mir",
+    "likes": "Likes",
     "spamWarning": "⏳ Du sendest zu schnell! Warte {{seconds}}s",
     "saveSuccess": "Profil erfolgreich gespeichert"
   },

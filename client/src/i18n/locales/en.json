@@ -187,6 +187,8 @@
     "customBgHint": "Upload an image to use as your app background (stored locally)",
     "clearCustomBg": "Clear image",
     "reportUser": "Report user",
+    "likeUser": "Like Person",
+    "likes": "Likes",
     "spamWarning": "⏳ Sending too fast! Wait {{seconds}}s",
     "saveSuccess": "Profile saved successfully"
   },

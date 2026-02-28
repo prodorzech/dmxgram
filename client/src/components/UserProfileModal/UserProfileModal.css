@@ -230,6 +230,39 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
+.profile-likes-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.likes-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-button.liked {
+  background: #ef4444;
+  color: white;
+}
+
+.action-button.liked:hover {
+  background: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
 @media (max-width: 480px) {
   .user-profile-modal {
     max-width: 95%;

@@ -187,6 +187,8 @@
     "customBgHint": "Sube una imagen para usarla como fondo de la app (guardada localmente)",
     "clearCustomBg": "Eliminar imagen",
     "reportUser": "Reportar usuario",
+    "likeUser": "Me gusta la persona",
+    "likes": "Me gusta",
     "spamWarning": "⏳ ¡Envías demasiado rápido! Espera {{seconds}}s",
     "saveSuccess": "Perfil guardado con éxito"
   },

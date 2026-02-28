@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, MessageCircle, Flag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, MessageCircle, Flag, Heart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Friend } from '../../types';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -21,6 +21,50 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
   const { toast } = useUI();
   const { t } = useTranslation();
   const [showReport, setShowReport] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLikedByMe, setIsLikedByMe] = useState(false);
+  const [liking, setLiking] = useState(false);
+
+  // Fetch likes data on component mount
+  useEffect(() => {
+    const fetchLikesData = async () => {
+      try {
+        const likesData = await api.getUserLikesCount(friend.id);
+        setLikesCount(likesData.count || 0);
+
+        if (user && token) {
+          const likedData = await api.checkIfUserLiked(friend.id, token);
+          setIsLikedByMe(likedData.liked || false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch likes data:', error);
+      }
+    };
+
+    fetchLikesData();
+  }, [friend.id, user, token]);
+
+  const handleLikeUser = async () => {
+    if (!user || !token) return;
+    setLiking(true);
+    try {
+      if (isLikedByMe) {
+        await api.unlikeUser(friend.id, token);
+        setIsLikedByMe(false);
+        setLikesCount(Math.max(0, likesCount - 1));
+        toast(t('user.likes'), 'info');
+      } else {
+        await api.likeUser(friend.id, token);
+        setIsLikedByMe(true);
+        setLikesCount(likesCount + 1);
+        toast(t('user.likeUser'), 'success');
+      }
+    } catch (error) {
+      toast('Failed to update like', 'error');
+    } finally {
+      setLiking(false);
+    }
+  };
 
   const handleReportSubmit = async (category: string, reason: string) => {
     if (!user || !token) return;
@@ -118,11 +162,27 @@ export function UserProfileModal({ friend, onClose, onSendMessage }: UserProfile
               </div>
             )}
 
+            <div className="profile-likes-section">
+              <Heart size={16} fill={isLikedByMe ? '#ef4444' : 'none'} color={isLikedByMe ? '#ef4444' : 'currentColor'} />
+              <span className="likes-count">{likesCount} {t('user.likes')}</span>
+            </div>
+
             <div className="profile-actions">
               {onSendMessage && (
                 <button className="action-button primary" onClick={onSendMessage}>
                   <MessageCircle size={18} />
                   Wyślij wiadomość
+                </button>
+              )}
+              {user && user.id !== friend.id && (
+                <button 
+                  className={`action-button ${isLikedByMe ? 'liked' : ''}`}
+                  onClick={handleLikeUser}
+                  disabled={liking}
+                  title={isLikedByMe ? 'Unlike' : 'Like'}
+                >
+                  <Heart size={18} fill={isLikedByMe ? 'currentColor' : 'none'} />
+                  {t('user.likeUser')}
                 </button>
               )}
               {user && user.id !== friend.id && (

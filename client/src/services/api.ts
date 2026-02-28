@@ -556,5 +556,37 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error('Failed to delete code');
+  },
+
+  // Like features
+  async likeUser(userId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/users/${userId}/like`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to like user');
+    return res.json();
+  },
+
+  async unlikeUser(userId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/users/${userId}/like`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to unlike user');
+  },
+
+  async getUserLikesCount(userId: string) {
+    const res = await fetch(`${API_URL}/api/users/${userId}/likes-count`);
+    if (!res.ok) throw new Error('Failed to fetch likes count');
+    return res.json();
+  },
+
+  async checkIfUserLiked(userId: string, token: string) {
+    const res = await fetch(`${API_URL}/api/users/${userId}/liked-by-me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to check if liked');
+    return res.json();
   }
 };

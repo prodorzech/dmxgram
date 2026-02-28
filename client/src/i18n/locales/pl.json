@@ -187,6 +187,8 @@
     "customBgHint": "Wgraj obraz jako tło aplikacji (zapisywane lokalnie)",
     "clearCustomBg": "Usuń obraz",
     "reportUser": "Zgłoś użytkownika",
+    "likeUser": "Polub Osobę",
+    "likes": "Polubienia",
     "spamWarning": "⏳ Wysyłasz za szybko! Poczekaj {{seconds}}s",
     "saveSuccess": "Profil zapisany pomyślnie"
   },
