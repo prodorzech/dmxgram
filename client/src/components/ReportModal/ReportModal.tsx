@@ -34,15 +34,15 @@ export const ReportModal: React.FC<ReportModalProps> = ({ senderUsername, onClos
   };
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if clicking directly on the overlay, not on the modal or its contents
+    // Only close if clicking directly on the overlay background, not on the modal
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
   return (
-    <div className="report-modal-overlay" onMouseDown={handleOverlayClick}>
-      <div className="report-modal" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="report-modal-overlay" onClick={handleOverlayClick}>
+      <div className="report-modal">
         <div className="report-modal-header">
           <Flag size={18} />
           <h3>{t('report.title')}</h3>
